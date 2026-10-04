@@ -11,6 +11,22 @@ type SetLike = WorkoutSetRow
 
 const DAY_MS = 86_400_000
 
+export const POSITION_PREFIX = 'position:'
+
+/** Offene Einheit (ended_at = null, Tag aus dem Plan); bei mehreren die neueste. Keine offene Einheit = Startseite. */
+export function activeSession<T extends SessionLike>(sessions: T[], plan: Plan): T | undefined {
+  const keys = new Set(plan.days.map((d) => d.key))
+  return sessions
+    .filter((s) => s.ended_at === null && keys.has(s.day_key))
+    .sort((a, b) => b.started_at.localeCompare(a.started_at))[0]
+}
+
+/** Gemerkte Positionen (meta-Keys "position:<sessionId>"), deren Session lokal fehlt oder beendet ist. */
+export function stalePositionKeys(metaKeys: string[], sessions: SessionLike[]): string[] {
+  const open = new Set(sessions.filter((s) => s.ended_at === null).map((s) => s.id))
+  return metaKeys.filter((k) => k.startsWith(POSITION_PREFIX) && !open.has(k.slice(POSITION_PREFIX.length)))
+}
+
 /** Plan-Tag nach Wochentag des Geraets (1 = Montag ... 5 = Freitag). Samstag/Sonntag: null (Lauftag). */
 export function planDayForDate(date: Date, plan: Plan): PlanDay | null {
   const wd = date.getDay() // 0 = Sonntag

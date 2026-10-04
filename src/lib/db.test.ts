@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { IDBFactory } from 'fake-indexeddb'
 import { openDB } from 'idb'
-import { deleteMeta, getAll, getDb, getMeta, resetDbHandle, setMeta } from './db'
+import { deleteMeta, getAll, getDb, getMeta, listMetaKeys, resetDbHandle, saveLocal, setMeta } from './db'
+import { pruneStalePositions } from './positions'
 
 beforeEach(async () => {
   await resetDbHandle()
@@ -44,5 +45,22 @@ describe('IndexedDB-Upgrade v1 -> v2', () => {
     expect(await getMeta('position:s1')).toEqual({ itemIdx: 2 })
     await deleteMeta('position:s1')
     expect(await getMeta('position:s1')).toBeUndefined()
+  })
+})
+
+describe('Veraltete Positionen', () => {
+  it('verwirft die Position einer fehlenden Session beim Start, laesst gueltige und andere meta-Eintraege', async () => {
+    const live = { id: 's1', day_key: 'mo_brust', started_at: '2026-10-05T10:00:00Z', ended_at: null, note: null }
+    await saveLocal('session', live)
+    await setMeta('position:s1', { itemIdx: 1, chosen: {}, assign: {} })
+    await setMeta('position:ghost', { itemIdx: 2, chosen: {}, assign: {} })
+    await setMeta('quotes:recent', ['a'])
+
+    const dropped = await pruneStalePositions(await getAll('session'))
+
+    expect(dropped).toEqual(['position:ghost'])
+    expect(await getMeta('position:ghost')).toBeUndefined()
+    expect(await getMeta('position:s1')).toBeTruthy()
+    expect(await listMetaKeys()).toEqual(['position:s1', 'quotes:recent'])
   })
 })

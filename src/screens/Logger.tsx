@@ -1,5 +1,7 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { activeSession } from '../lib/logger'
 import { plan } from '../lib/plan'
+import { pruneStalePositions } from '../lib/positions'
 import { quoteToShow, type PendingQuote } from '../lib/quotes'
 import { useLocalData } from '../lib/useLocalData'
 import { Home } from './Home'
@@ -11,11 +13,13 @@ export function Logger({ extras }: { extras?: ReactNode }) {
   const { sessions, sets, loaded } = useLocalData()
   // Nur im Speicher: nach einem Neuladen (Wiederaufnahme) gibt es kein Zitat mehr.
   const [pending, setPending] = useState<PendingQuote | null>(null)
+  // Beim Start: gemerkte Positionen ohne lokale (offene) Session verwerfen.
+  useEffect(() => {
+    if (loaded) void pruneStalePositions(sessions)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded])
   if (!loaded) return null
-  const planKeys = new Set(plan.days.map((d) => d.key))
-  const active = sessions
-    .filter((s) => s.ended_at === null && planKeys.has(s.day_key))
-    .sort((a, b) => b.started_at.localeCompare(a.started_at))[0]
+  const active = activeSession(sessions, plan)
   if (!active) return <Home sessions={sessions} extras={extras} onQuote={setPending} />
   const quote = quoteToShow(active.id, pending)
   if (quote) return <QuoteCard quote={quote} onGo={() => setPending(null)} />

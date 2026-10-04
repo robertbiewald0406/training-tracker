@@ -193,6 +193,10 @@ export async function getMeta<T>(key: string): Promise<T | undefined> {
   const db = await getDb()
   return (await db.get('meta', key))?.value as T | undefined
 }
+export async function listMetaKeys(prefix = ''): Promise<string[]> {
+  const db = await getDb()
+  return ((await db.getAllKeys('meta')) as string[]).filter((k) => k.startsWith(prefix))
+}
 export async function setMeta(key: string, value: unknown) {
   const db = await getDb()
   await db.put('meta', { key, value })

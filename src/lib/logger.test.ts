@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { plan, type Plan } from './plan'
 import {
+  activeSession,
+  stalePositionKeys,
   buildSetRow,
   derivePosition,
   setsByPosition,
@@ -210,3 +212,21 @@ describe('Zahleneingabe', () => {
 // Typ-Check: plan.json passt zu den Plan-Typen
 const _p: Plan = plan
 void _p
+
+describe('Gemerkte Position ohne Session', () => {
+  const open1 = sess('s1', 'mo_brust', '2026-10-05T10:00:00Z')
+  it('Position einer lokal fehlenden Session ist veraltet, die einer offenen nicht', () => {
+    const keys = ['position:ghost', 'position:s1', 'quotes:recent']
+    expect(stalePositionKeys(keys, [open1])).toEqual(['position:ghost'])
+    expect(stalePositionKeys(keys, [])).toEqual(['position:ghost', 'position:s1'])
+  })
+  it('beendete Sessions haben keine gueltige Position mehr', () => {
+    const done = sess('s1', 'mo_brust', '2026-10-05T10:00:00Z', '2026-10-05T11:00:00Z')
+    expect(stalePositionKeys(['position:s1'], [done])).toEqual(['position:s1'])
+  })
+  it('ohne offene Session gibt es keine aktive Einheit (Startseite)', () => {
+    expect(activeSession([], plan)).toBeUndefined()
+    expect(activeSession([sess('x', 'test', '2026-10-05T10:00:00Z')], plan)).toBeUndefined()
+    expect(activeSession([open1, sess('s2', 'di_ruecken', '2026-10-06T10:00:00Z')], plan)?.id).toBe('s2')
+  })
+})
