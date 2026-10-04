@@ -64,9 +64,11 @@ button, input, a, label {
   touch-action: manipulation;
 }
 
-/* Safari zoomt in Felder unter 16 px hinein: nie kleiner. */
-input, select, textarea {
-  font-size: max(16px, 1em);
+/* Safari zoomt in Felder unter 16 px hinein: nie kleiner. Im Base-Layer, damit Klassen wie text-6xl gewinnen. */
+@layer base {
+  input, select, textarea {
+    font-size: max(16px, 1em);
+  }
 }
 
 body {

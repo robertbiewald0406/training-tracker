@@ -142,6 +142,42 @@ export function Plate({ filled = false, ...p }: P & { filled?: boolean }) {
   )
 }
 
+
+// Navigation und Trend
+export const ChartBars = (p: P) => (
+  <Svg {...p}>
+    <rect x="3" y="12" width="4.5" height="9" />
+    <rect x="9.75" y="6" width="4.5" height="15" />
+    <rect x="16.5" y="3" width="4.5" height="18" />
+  </Svg>
+)
+export const Menu = (p: P) => (
+  <Svg {...p}>
+    <rect x="3" y="5" width="18" height="3" />
+    <rect x="3" y="10.5" width="18" height="3" />
+    <rect x="3" y="16" width="18" height="3" />
+  </Svg>
+)
+export const ArrowUp = (p: P) => (
+  <Svg {...p}>
+    <path d="M12 3 L21 14 H15 V21 H9 V14 H3 Z" />
+  </Svg>
+)
+export const ArrowDown = (p: P) => (
+  <Svg {...p}>
+    <path d="M12 21 L3 10 H9 V3 H15 V10 H21 Z" />
+  </Svg>
+)
+export const Chevron = ({ dir = 'right', ...p }: P & { dir?: 'left' | 'right' | 'down' }) => (
+  <Svg {...p}>
+    <path
+      {...S}
+      strokeWidth="3.5"
+      d={dir === 'left' ? 'M15 4 L7 12 L15 20' : dir === 'down' ? 'M4 8 L12 16 L20 8' : 'M9 4 L17 12 L9 20'}
+    />
+  </Svg>
+)
+
 // Zuordnung Trainingstag -> Symbol (plan.json: days[].key). Lauftag am Wochenende: Palme.
 export const DAY_ICONS = {
   mo_brust: Barbell,

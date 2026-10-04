@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react'
 import { Header } from './Header'
 import { StripeBand } from './Ribbon'
-import { Scene } from './Scene'
 import { Barbell, Dumbbell, Kettlebell, Trophy } from './icons'
 
 // Dekoration an den Seiten, nur auf breiten Bildschirmen (leere Flaechen), nie hinter Zahlen.
@@ -21,11 +20,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="relative min-h-dvh">
       <SideDecor />
-      <Scene />
       <div className="relative z-10">
         <Header />
         <StripeBand />
-        <main className="mx-auto max-w-md space-y-5 p-4 pb-[calc(12rem+env(safe-area-inset-bottom))]">
+        <main className="mx-auto max-w-md space-y-5 p-4 pb-[calc(6.5rem+env(safe-area-inset-bottom))]">
           {children}
         </main>
       </div>

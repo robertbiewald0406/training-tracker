@@ -29,21 +29,21 @@ export function RestTimer({ endsAt, onAdjust, onSkip }: Props) {
     }
   }, [left])
 
-  // Fest am oberen Rand (kein Layout-Sprung beim Start), ruhiger Kartengrund hinter der Zahl.
-  const adj = 'num !min-h-14 !w-24 shrink-0 !px-0 !text-xl'
+  // Fest am oberen Rand (kein Layout-Sprung beim Start), eine schlanke Zeile auf ruhigem Kartengrund.
+  const adj = 'num !min-h-14 !w-14 shrink-0 !px-0 !text-base'
   return (
     <div className="fixed inset-x-2 top-[calc(0.5rem+env(safe-area-inset-top))] z-30 mx-auto max-w-md">
-      <Card tone="baby" className="space-y-3 p-3" role="timer" aria-label={left > 0 ? 'Pause' : 'Pause vorbei'}>
+      <Card tone="baby" className="p-2" role="timer" aria-label={left > 0 ? 'Pause' : 'Pause vorbei'}>
         <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1 pl-1">
+            <p className="flex items-center gap-1 text-sm font-bold uppercase leading-none">
+              <Stopwatch className="size-4" /> {left > 0 ? 'Pause' : 'Weiter!'}
+            </p>
+            <p className="num text-4xl leading-none">{fmt(left)}</p>
+          </div>
           <Button className={adj} onClick={() => onAdjust(-15_000)} aria-label="15 Sekunden weniger">
             −15
           </Button>
-          <div className="min-w-0 flex-1 text-center">
-            <p className="flex items-center justify-center gap-1 text-base font-bold uppercase">
-              <Stopwatch className="size-5" /> {left > 0 ? 'Pause' : 'Weiter!'}
-            </p>
-            <p className="num text-6xl leading-none">{fmt(left)}</p>
-          </div>
           <Button
             className={adj}
             onClick={() => onAdjust(Math.max(endsAt, Date.now()) - endsAt + 15_000)}
@@ -51,10 +51,10 @@ export function RestTimer({ endsAt, onAdjust, onSkip }: Props) {
           >
             +15
           </Button>
+          <Button className="!w-auto shrink-0 !px-3 !text-base" onClick={onSkip}>
+            Weiter
+          </Button>
         </div>
-        <Button variant="primary" onClick={onSkip}>
-          {left > 0 ? 'Überspringen' : 'Weiter'}
-        </Button>
       </Card>
     </div>
   )

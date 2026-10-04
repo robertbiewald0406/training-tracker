@@ -15,6 +15,7 @@ import {
 } from '../lib/logger'
 import { plan, type Exercise } from '../lib/plan'
 import { supabase } from '../lib/supabase'
+import { lastLog } from '../lib/stats'
 import { deleteAndSync, saveAndSync } from '../lib/sync'
 import type { LocalRow } from '../lib/types'
 import { unlockAudio } from '../lib/signal'
@@ -23,8 +24,8 @@ import { Button } from '../ui/Button'
 import { Card } from '../ui/Card'
 import { RestTimer } from '../ui/RestTimer'
 import { SetProgress } from '../ui/SetProgress'
-import { Check, DAY_ICONS, Flame, Trophy } from '../ui/icons'
-import { Divider } from '../ui/Divider'
+import { Check, Chevron, DAY_ICONS, Flame, Trophy } from '../ui/icons'
+import { LastTime } from './LastTime'
 import { SetEditor, type SetValues } from './SetEditor'
 
 interface Props {
@@ -50,6 +51,7 @@ export function Workout({ session, sessions, sets }: Props) {
   const [stepKg, setStepKg] = useState(2.5)
   const [editing, setEditing] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [panel, setPanel] = useState<string | null>(null) // "<idx>:cue" | "<idx>:alt"
   useWakeLock(true)
   // Wiederaufnahme ohne Start-Tap: Audio beim ersten Tap freischalten.
   useEffect(() => {
@@ -91,30 +93,53 @@ export function Workout({ session, sessions, sets }: Props) {
     await deleteMeta(`position:${session.id}`)
   }
 
+  const Icon = DAY_ICONS[day.key as keyof typeof DAY_ICONS]
+  const finished = idx >= n
+  const per = setsByPosition(day, plan, sets, session.id, pos.assign)
+  const go = (i: number) => update({ ...pos, itemIdx: Math.max(0, Math.min(n, i)) })
+
+  // Kopf: Tagesname und Uebungsnavigation. Jede Uebung ist ein Tipp-Ziel (erledigt = Haken, aktuell = Neon).
   const header = (
-    <div className="flex items-center gap-3">
-      {(() => {
-        const Icon = DAY_ICONS[day.key as keyof typeof DAY_ICONS]
-        return Icon ? <Icon className="size-10 shrink-0" /> : null
-      })()}
-      <div className="min-w-0">
-        <h1 className="text-3xl leading-none">{day.name}</h1>
-        <p className="text-base">{idx >= n ? 'Alle Übungen erledigt' : `Übung ${idx + 1} von ${n}`}</p>
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        {Icon && <Icon className="size-6 shrink-0" />}
+        <h1 className="min-w-0 flex-1 truncate text-lg leading-none">{day.name}</h1>
+        <p className="num shrink-0 text-base">{finished ? 'Fertig' : `Übung ${idx + 1} von ${n}`}</p>
       </div>
+      <ol className="flex gap-2" aria-label="Übungen">
+        {day.items.map((it, i) => {
+          const full = positionDone(day, plan, per[i], i) >= setsFor(it, rampUp, plan)
+          return (
+            <li key={it.exercise_key} className="flex-1">
+              <button
+                type="button"
+                onClick={() => go(i)}
+                aria-label={`Übung ${i + 1}: ${plan.exercises[pos.chosen[i] ?? it.exercise_key].name}${full ? ', erledigt' : ''}`}
+                aria-current={i === idx ? 'step' : undefined}
+                className={`num flex min-h-12 w-full items-center justify-center border-[3px] border-ink text-xl ${
+                  i === idx ? 'bg-neon' : full ? 'bg-ok' : 'bg-card'
+                }`}
+              >
+                {full && i !== idx ? <Check className="size-6" /> : i + 1}
+              </button>
+            </li>
+          )
+        })}
+      </ol>
     </div>
   )
 
-  if (idx >= n) {
+  if (finished) {
     return (
       <>
+        {header}
         <Card className="space-y-4">
-          {header}
           <div className="flex items-center gap-3">
             <Trophy className="size-12 shrink-0" />
             <p className="text-xl">Stark! Alle Übungen sind durch.</p>
           </div>
           <Button variant="primary" onClick={() => void endSession()}>Einheit beenden</Button>
-          <Button onClick={() => update({ ...pos, itemIdx: n - 1 })}>Zurück zur letzten Übung</Button>
+          <Button onClick={() => go(n - 1)}>Zurück zur letzten Übung</Button>
         </Card>
       </>
     )
@@ -125,7 +150,6 @@ export function Workout({ session, sessions, sets }: Props) {
   const chosenKey = pos.chosen[idx] ?? item.exercise_key
   const ex = plan.exercises[chosenKey]
   const uni = Boolean(ex.unilateral)
-  const per = setsByPosition(day, plan, sets, session.id, pos.assign)
   const done = positionDone(day, plan, per[idx], idx)
   const total = setsFor(item, rampUp, plan)
   const right = uni ? pendingRightSide(sets, session.id, chosenKey) : null
@@ -139,6 +163,17 @@ export function Workout({ session, sessions, sets }: Props) {
   if (editSet) initial = { weight_kg: editSet.weight_kg, reps: editSet.reps }
   else if (right) initial = { weight_kg: right.weight_kg, reps: right.reps } // links -> rechts uebernehmen
   else initial = prefill(chosenKey, uni ? 'left' : 'both', sets, sessions, session.id)
+
+  // Vergleich mit dem letzten Mal: derselbe Satz (gleiche Reihenfolge, gleiche Seite), sonst der letzte Satz.
+  const prev = lastLog(chosenKey, sets, sessions, session.id)
+  const prevNos = [...new Set(prev?.sets.map((s) => s.set_no))]
+  const refNo = prevNos[Math.min(done, prevNos.length - 1)]
+  const refSet = prev ? (prev.sets.find((s) => s.set_no === refNo && s.side === side) ?? prev.sets.find((s) => s.set_no === refNo)) : undefined
+  const reference = refSet ? { weight_kg: refSet.weight_kg, reps: refSet.reps, label: `Satz ${prevNos.indexOf(refNo) + 1}` } : null
+
+  // Erster Satz der Uebung in dieser Einheit: den gleichen Satz vom letzten Mal vorbelegen (sonst den letzten Satz heute).
+  const startedHere = sessionSets.some((x) => x.exercise_key === chosenKey && !x.is_warmup)
+  if (!editSet && !right && !startedHere && reference) initial = { weight_kg: reference.weight_kg, reps: reference.reps }
 
   async function saveSet(v: SetValues) {
     if (!pos) return
@@ -192,63 +227,83 @@ export function Workout({ session, sessions, sets }: Props) {
     setEditing(null)
   }
 
-  const go = (i: number) => update({ ...pos, itemIdx: Math.max(0, Math.min(n, i)) })
-
   return (
     <>
-      <Card className="space-y-4">
-        {header}
-        <Divider />
-        <div className="space-y-1">
-          <h2 className="text-2xl leading-tight">{ex.name}</h2>
+      {header}
+
+      <Card className="space-y-3">
+        <div>
+          <h2 className="text-xl leading-tight">{ex.name}</h2>
           <p className="text-base">
             {ex.equipment} · {ex.attachment}
           </p>
-          <p className="text-lg">{ex.cue}</p>
         </div>
         <div className="flex items-center justify-between gap-3">
-          <p className="num text-4xl leading-none">
+          <p className="num text-3xl leading-none">
             {item.rep_min}–{item.rep_max}
-            <span className="ml-1 text-lg font-semibold">Wdh.</span>
+            <span className="ml-1 text-base font-semibold">Wdh.</span>
           </p>
           <SetProgress done={done} total={total} />
         </div>
-        <p className="text-xl">
-          {done >= total ? (
-            <span className="inline-flex items-center gap-2">
-              <Check className="size-6" /> Übung fertig
-            </span>
-          ) : (
-            <>Satz {done + 1} von {total}</>
-          )}
-        </p>
-        {uni && <p className="text-base">Einseitig: erst links, dann rechts speichern.</p>}
+        {(done >= total || uni) && (
+          <p className="text-base">
+            {done >= total && (
+              <span className="inline-flex items-center gap-2 text-lg">
+                <Check className="size-6" /> Übung fertig
+              </span>
+            )}
+            {uni && <span className="block">Einseitig: erst links, dann rechts speichern.</span>}
+          </p>
+        )}
         {rampUp && (
           <p className="flex items-center gap-2 border-[3px] border-ink bg-baby px-3 py-2 text-base">
             <Flame className="size-5 shrink-0" /> Wiedereinstieg: ein Satz weniger. Nicht bis Versagen.
           </p>
         )}
-        {keys.length > 1 && (
-          <div className="space-y-2">
+        <div className="flex gap-2">
+          {[
+            { id: 'cue', text: 'Hinweis' },
+            ...(keys.length > 1 ? [{ id: 'alt', text: 'Alternative' }] : []),
+          ].map((b) => {
+            const open = panel === `${idx}:${b.id}`
+            return (
+              <button
+                key={b.id}
+                type="button"
+                aria-expanded={open}
+                onClick={() => setPanel(open ? null : `${idx}:${b.id}`)}
+                className={`flex min-h-12 flex-1 items-center justify-center gap-1 border-[3px] border-ink font-display text-base uppercase tracking-wide ${
+                  open ? 'bg-baby' : 'bg-card'
+                }`}
+              >
+                {b.text}
+                <Chevron dir={open ? 'down' : 'right'} className="size-4" />
+              </button>
+            )
+          })}
+        </div>
+        {panel === `${idx}:cue` && <p className="text-lg">{ex.cue}</p>}
+        {panel === `${idx}:alt` && (
+          <div className="flex flex-col gap-2">
             <p className="text-base">Belegt? Alternative wählen:</p>
-            <div className="flex flex-col gap-2">
-              {keys.map((k) => (
-                <button
-                  key={k}
-                  type="button"
-                  aria-pressed={k === chosenKey}
-                  onClick={() => update({ ...pos, chosen: { ...pos.chosen, [idx]: k } })}
-                  className={`min-h-14 border-[3px] border-ink px-3 text-left text-lg shadow-hard active:translate-x-1 active:translate-y-1 active:shadow-none ${
-                    k === chosenKey ? 'bg-neon' : 'bg-card'
-                  }`}
-                >
-                  {plan.exercises[k].name}
-                </button>
-              ))}
-            </div>
+            {keys.map((k) => (
+              <button
+                key={k}
+                type="button"
+                aria-pressed={k === chosenKey}
+                onClick={() => update({ ...pos, chosen: { ...pos.chosen, [idx]: k } })}
+                className={`min-h-14 border-[3px] border-ink px-3 text-left text-lg ${
+                  k === chosenKey ? 'bg-neon' : 'bg-card'
+                }`}
+              >
+                {plan.exercises[k].name}
+              </button>
+            ))}
           </div>
         )}
       </Card>
+
+      <LastTime key={chosenKey} log={prev} current={done} />
 
       {pos.restEndsAt !== undefined && (
         <RestTimer
@@ -256,6 +311,12 @@ export function Workout({ session, sessions, sets }: Props) {
           onAdjust={(d) => update({ ...pos, restEndsAt: pos.restEndsAt! + d })}
           onSkip={() => update({ ...pos, restEndsAt: undefined })}
         />
+      )}
+
+      {done >= total && !editSet && (
+        <Button variant="primary" onClick={() => go(idx + 1)}>
+          {idx === n - 1 ? 'Abschluss' : 'Nächste Übung'}
+        </Button>
       )}
 
       {editSet ? (
@@ -278,6 +339,7 @@ export function Workout({ session, sessions, sets }: Props) {
           key={`${chosenKey}|${side}|${setNo}`}
           title={`${done >= total && !right ? 'Zusatzsatz' : `Satz ${done + 1}`}${uni ? ` · ${side === 'left' ? 'LINKS' : 'RECHTS'}` : ''}`}
           initial={initial}
+          reference={reference}
           stepKg={stepKg}
           onStepKg={setStepKg}
           rampUp={rampUp}
@@ -289,10 +351,9 @@ export function Workout({ session, sessions, sets }: Props) {
       )}
 
       {lastSet && !editSet && (
-        <Card className="space-y-3">
-          <h2 className="text-xl">Letzter Satz</h2>
-          <p className="num text-2xl">
-            {kg(lastSet.weight_kg)} kg × {lastSet.reps}
+        <Card className="space-y-2 py-3">
+          <p className="num text-lg">
+            Letzter Satz: {kg(lastSet.weight_kg)} kg × {lastSet.reps}
             <span className="ml-2 font-sans text-base font-semibold">
               {plan.exercises[lastSet.exercise_key].name}
               {lastSet.side !== 'both' ? `, ${SIDE_TEXT[lastSet.side]}` : ''}
@@ -307,12 +368,6 @@ export function Workout({ session, sessions, sets }: Props) {
         </Card>
       )}
 
-      <div className="flex gap-3">
-        <Button disabled={idx === 0} onClick={() => go(idx - 1)}>Zurück</Button>
-        <Button variant={done >= total ? 'primary' : 'secondary'} onClick={() => go(idx + 1)}>
-          {idx === n - 1 ? 'Abschluss' : 'Nächste Übung'}
-        </Button>
-      </div>
       <Button onClick={() => void endSession()}>Einheit beenden</Button>
     </>
   )

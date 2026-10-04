@@ -21,7 +21,7 @@ export function Header() {
       <button
         onClick={() => void syncNow(supabase, { pull: true })}
         aria-label={label}
-        className={`relative flex size-14 items-center justify-center border-[3px] border-ink shadow-hard active:translate-x-1 active:translate-y-1 active:shadow-none ${tone}`}
+        className={`relative flex size-14 items-center justify-center border-[3px] border-ink active:brightness-95 ${tone}`}
       >
         <Dumbbell className={`size-8 ${s.syncing ? 'animate-spin motion-reduce:animate-none' : ''}`} />
         {s.pending > 0 && (

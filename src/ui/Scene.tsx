@@ -16,9 +16,15 @@ function Waves({ color, height, offset = 0 }: { color: string; height: number; o
 }
 
 // Strandszene am unteren Seitenrand: Sonne am Horizont, Wellen, Palmen. Nur Dekoration, steht hinter allem.
-export function Scene({ sun = true }: { sun?: boolean }) {
+export function Scene({ sun = true, inline = false }: { sun?: boolean; inline?: boolean }) {
+  // inline: im Seitenfluss am Ende der Seite (kein festes Element, nichts liegt dahinter oder davor).
   return (
-    <div aria-hidden="true" className="pointer-events-none fixed inset-x-0 bottom-0 z-0 h-36 overflow-hidden sm:h-44">
+    <div
+      aria-hidden="true"
+      className={`pointer-events-none inset-x-0 bottom-0 z-0 h-36 overflow-hidden sm:h-44 ${
+        inline ? 'relative -mx-4 mt-4 border-t-[3px] border-ink bg-sky-top/50' : 'fixed'
+      }`}
+    >
       {sun && <Sun className="absolute bottom-[-4.5rem] left-1/2 size-48 -translate-x-1/2" />}
       <Waves color="#8fd8f5" height={64} offset={30} />
       <Waves color="#00b7c3" height={40} />

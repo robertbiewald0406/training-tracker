@@ -18,7 +18,7 @@
 - .env nie committen. Nur .env.example (ohne Werte) ist im Repo.
 
 ## Stack
-Vite + React + TypeScript, Tailwind, Recharts, supabase-js. Keine weiteren Dienste.
+Vite + React + TypeScript, Tailwind, supabase-js. Diagramme als schlichte Inline-SVGs (src/ui/charts.tsx), kein Chart-Paket. Keine weiteren Dienste.
 Hosting: GitHub Pages über GitHub Actions (Vite `base` auf den Repo-Namen).
 
 ## Supabase
@@ -48,9 +48,21 @@ Hosting: GitHub Pages über GitHub Actions (Vite `base` auf den Repo-Namen).
 - Mobile first, PWA mit Service Worker, offline lauffähig.
 - Einstellungen: JSON-Export und -Import, Logout, Sync-Status.
 
-## Dashboard
-Harte Sätze pro Muskel und Woche (primary_muscle), geschätztes 1RM (Epley) als Trend,
-Volumen-Load pro Übung, Körpergewicht als 7-Tage-Mittel, PRs.
+## Navigation
+Untere Tab-Leiste (src/ui/TabBar.tsx): Training (Start bzw. laufende Einheit), Verlauf (Dashboard), Mehr (Sync,
+Einstellungen, Backup, Abmelden). Alle Tabs sind mobil gedacht. Das Training bleibt beim Tab-Wechsel eingehängt.
+Startseite: Wochenleiste wählt den Tag (Standard heute), darunter die Übungen mit "Zuletzt"-Werten.
+
+## Vergleich mit dem letzten Mal
+src/lib/stats.ts (`lastLog`, `compareSets`): Im Training zeigt die Karte "Letztes Mal" die Arbeitssätze der
+vorigen Einheit dieser Übung, der nächste Satz ist markiert. Der erste Satz wird mit dem gleichen Satz vom letzten
+Mal vorbelegt, ein Hinweis vergleicht live über das geschätzte 1RM (besser / wie / unter letztem Mal).
+
+## Dashboard (Tab Verlauf)
+Kennzahlen der Woche (Einheiten, harte Sätze, Volumen; Vergleich mit der Vorwoche bis zum gleichen Zeitpunkt),
+harte Sätze pro Muskel und Woche (primary_muscle, Strich = ganze Vorwoche), je Übung geschätztes 1RM (Epley) und
+Volumen-Load als Trend mit Zeitraumwahl, letzte Rekorde, Körpergewicht (Eingabe, 7-Tage-Mittel). Alle Zahlen
+kommen aus lokalen Daten (offline), nur is_warmup = false zählt, links/rechts eines Satzes zählt einmal.
 
 ## Backup
 - Einstellungen: "Backup exportieren" (JSON mit Formatversion, Zeitstempel, session/workout_set/bodyweight; ohne
@@ -98,15 +110,16 @@ Sonnenuntergang, Palmen, Hanteln). Kein Dark Mode (`color-scheme: light`).
 - Schrift (@fontsource, nur woff2, nur Latin, nur benutzte Schnitte, keine externen Server): Righteous für
   Überschriften und Buttons, Yellowtail nur für das Wort "Heavy", Barlow Semi Condensed 600/700 für Text und
   alle Zahlen (Gewicht, Wiederholungen, Timer; Klasse `num`, tabellarische Ziffern).
-- Form: 3 px Konturen in Indigo, harte Schlagschatten (4 px Versatz, keine Unschärfe) in Indigo, Buttons
-  mind. 56 px hoch, gedrückt verschiebt sich der Button um 4 px. Verläufe nur für Himmel-Hintergrund und Sonne.
+- Form: 3 px Konturen in Indigo, Buttons mind. 56 px hoch. Harter Schlagschatten (4 px Versatz, keine Unschärfe)
+  nur auf Karten und dem einen Haupt-Button je Ansicht (`primary`, gedrückt 4 px Versatz). Alle anderen Buttons,
+  Schalter und Auswahlfelder sind flach (Kontur, kein Schatten); aktiv = Neon-Fläche. Verläufe nur für Himmel-Hintergrund und Sonne.
 - Marke: Wortmarke "LIFT" (Righteous, Indigo, pinker Schlagschatten) mit "Heavy" (Yellowtail, Pink, 2 px
   Indigo-Kontur) darunter. Auf Login und in der Kopfzeile. Browser-Titel "Lift Heavy".
 - Symbole: eigene einfarbige Inline-SVGs in src/ui/icons.tsx (keine Emojis, Bilder oder Icon-Bibliothek).
   Hantel = Sync-Symbol (dreht sich beim Sync), Scheibe = Satzfortschritt, Stoppuhr = Pausentimer,
   Flamme = "Bis Versagen", Pokal = neuer Rekord, Hantel-Trennlinie, Tagessymbole in `DAY_ICONS`.
-- Bodybuilding-Szenerie (Venice-Beach-Vibes): Strandszene mit Sonne, Wellen und Palmen am unteren Rand
-  (`Scene`), Motto-Banner mit Sternen und Langhanteln (`Ribbon`), Dreistreifen-Band unter der Kopfzeile,
+- Bodybuilding-Szenerie (Venice-Beach-Vibes): Strandszene mit Sonne, Wellen und Palmen (`Scene`; fest auf Login
+  und Zitat, im Seitenfluss am Ende der Startseite, nie hinter der Tab-Leiste), Motto-Banner mit Sternen und Langhanteln (`Ribbon`), Dreistreifen-Band unter der Kopfzeile,
   große Gerätesymbole an den Seiten auf breiten Bildschirmen. Alles rein dekorativ (`aria-hidden`).
 - Regel: Gewicht, Wiederholungen und Timer stehen immer auf ruhigem, einfarbigem Kartengrund. Dekoration nur
   in Kopfbereich, an Rändern und auf leeren Flächen, nie hinter Zahlen.

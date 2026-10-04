@@ -8,14 +8,14 @@ interface Props<T extends number | string> {
 
 export function Segmented<T extends number | string>({ label, options, value, onChange }: Props<T>) {
   return (
-    <div role="group" aria-label={label} className="flex gap-2">
-      {options.map((o) => (
+    <div role="group" aria-label={label} className="flex border-[3px] border-ink bg-card">
+      {options.map((o, i) => (
         <button
           key={String(o.value)}
           type="button"
           aria-pressed={o.value === value}
           onClick={() => onChange(o.value)}
-          className={`num min-h-14 flex-1 border-[3px] border-ink text-xl text-ink shadow-hard active:translate-x-1 active:translate-y-1 active:shadow-none ${
+          className={`num min-h-12 flex-1 text-lg text-ink ${i > 0 ? 'border-l-[3px] border-ink' : ''} ${
             o.value === value ? 'bg-neon' : 'bg-card'
           }`}
         >

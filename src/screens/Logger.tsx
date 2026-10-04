@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import { activeSession } from '../lib/logger'
 import { plan } from '../lib/plan'
 import { pruneStalePositions } from '../lib/positions'
@@ -9,7 +9,7 @@ import { QuoteCard } from './QuoteCard'
 import { Workout } from './Workout'
 
 /** Offene Einheit (ended_at = null) -> Workout (Wiederaufnahme), sonst Startseite. */
-export function Logger({ extras }: { extras?: ReactNode }) {
+export function Logger() {
   const { sessions, sets, loaded } = useLocalData()
   // Nur im Speicher: nach einem Neuladen (Wiederaufnahme) gibt es kein Zitat mehr.
   const [pending, setPending] = useState<PendingQuote | null>(null)
@@ -20,7 +20,7 @@ export function Logger({ extras }: { extras?: ReactNode }) {
   }, [loaded])
   if (!loaded) return null
   const active = activeSession(sessions, plan)
-  if (!active) return <Home sessions={sessions} extras={extras} onQuote={setPending} />
+  if (!active) return <Home sessions={sessions} sets={sets} onQuote={setPending} />
   const quote = quoteToShow(active.id, pending)
   if (quote) return <QuoteCard quote={quote} onGo={() => setPending(null)} />
   return <Workout key={active.id} session={active} sessions={sessions} sets={sets} />
