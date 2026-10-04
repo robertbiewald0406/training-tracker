@@ -8,6 +8,7 @@ import { Logger } from './screens/Logger'
 import { SettingsCard } from './screens/SettingsCard'
 import { Divider } from './ui/Divider'
 import { DevTools } from './DevTools'
+import { loadSettings } from './lib/settings'
 import { startSync } from './lib/sync'
 import { supabase, supabaseConfigured } from './lib/supabase'
 
@@ -17,6 +18,7 @@ function Shell() {
 
   // Sync beim App-Start (sobald eingeloggt) und beim online-Event.
   useEffect(() => (loggedIn ? startSync(supabase) : undefined), [loggedIn])
+  useEffect(() => void loadSettings(), [])
 
   if (!supabaseConfigured)
     return (

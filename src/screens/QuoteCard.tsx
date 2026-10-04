@@ -16,7 +16,7 @@ export function QuoteCard({ quote, onGo }: { quote: Quote; onGo: () => void }) {
       className="fixed inset-0 z-40 overflow-y-auto bg-gradient-to-b from-sky-top to-sky-bottom"
     >
       <Scene />
-      <div className="relative z-10 mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-5 px-4 pb-44 pt-6">
+      <div className="relative z-10 mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-5 px-4 pb-[calc(11rem+env(safe-area-inset-bottom))] pt-[calc(1.5rem+env(safe-area-inset-top))]">
         <Sun className="mx-auto size-24" />
         <Card className="space-y-5 p-5">
           <div className="flex justify-center gap-2 text-neon" aria-hidden="true">

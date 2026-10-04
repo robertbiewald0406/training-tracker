@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Button } from './Button'
 import { Card } from './Card'
+import { getSettings } from '../lib/settings'
+import { playEndSignal } from '../lib/signal'
 import { Stopwatch } from './icons'
 
 interface Props {
@@ -23,14 +25,14 @@ export function RestTimer({ endsAt, onAdjust, onSkip }: Props) {
     if (left > 0) wasRunning.current = true
     else if (wasRunning.current) {
       wasRunning.current = false
-      navigator.vibrate?.(300)
+      playEndSignal(getSettings())
     }
   }, [left])
 
   // Fest am oberen Rand (kein Layout-Sprung beim Start), ruhiger Kartengrund hinter der Zahl.
   const adj = 'num !min-h-14 !w-24 shrink-0 !px-0 !text-xl'
   return (
-    <div className="fixed inset-x-2 top-2 z-30 mx-auto max-w-md">
+    <div className="fixed inset-x-2 top-[calc(0.5rem+env(safe-area-inset-top))] z-30 mx-auto max-w-md">
       <Card tone="baby" className="space-y-3 p-3" role="timer" aria-label={left > 0 ? 'Pause' : 'Pause vorbei'}>
         <div className="flex items-center gap-2">
           <Button className={adj} onClick={() => onAdjust(-15_000)} aria-label="15 Sekunden weniger">

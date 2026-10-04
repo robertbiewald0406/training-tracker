@@ -27,7 +27,7 @@ export function LoginScreen() {
   return (
     <div className="relative min-h-dvh overflow-hidden">
       <Scene sun={false} />
-      <main className="relative z-10 mx-auto flex max-w-md flex-col items-center gap-3 px-4 pb-44 pt-6">
+      <main className="relative z-10 mx-auto flex max-w-md flex-col items-center gap-3 px-4 pb-[calc(11rem+env(safe-area-inset-bottom))] pt-[calc(1.5rem+env(safe-area-inset-top))]">
         <Sun className="size-28" />
         <Wordmark />
         <Ribbon />

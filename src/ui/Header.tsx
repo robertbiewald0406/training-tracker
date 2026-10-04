@@ -16,7 +16,7 @@ export function Header() {
         : 'Alles synchronisiert'
   const tone = s.error ? 'bg-err text-white' : s.pending > 0 || !s.online ? 'bg-neon text-ink' : 'bg-ok text-ink'
   return (
-    <header className="flex items-center justify-between gap-3 px-4 pt-4">
+    <header className="flex items-center justify-between gap-3 px-4 pt-[calc(1rem+env(safe-area-inset-top))]">
       <Wordmark size="sm" />
       <button
         onClick={() => void syncNow(supabase, { pull: true })}

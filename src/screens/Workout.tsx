@@ -17,6 +17,7 @@ import { plan, type Exercise } from '../lib/plan'
 import { supabase } from '../lib/supabase'
 import { deleteAndSync, saveAndSync } from '../lib/sync'
 import type { LocalRow } from '../lib/types'
+import { unlockAudio } from '../lib/signal'
 import { useWakeLock } from '../lib/useWakeLock'
 import { Button } from '../ui/Button'
 import { Card } from '../ui/Card'
@@ -50,6 +51,11 @@ export function Workout({ session, sessions, sets }: Props) {
   const [editing, setEditing] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   useWakeLock(true)
+  // Wiederaufnahme ohne Start-Tap: Audio beim ersten Tap freischalten.
+  useEffect(() => {
+    window.addEventListener('pointerdown', unlockAudio, { once: true })
+    return () => window.removeEventListener('pointerdown', unlockAudio)
+  }, [])
 
   // Wiederaufnahme: gespeicherte Position (lokal, nie synchronisiert), sonst aus den Saetzen abgeleitet.
   useEffect(() => {

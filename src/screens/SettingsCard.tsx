@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import {
   exportBackup,
   getLastExport,
@@ -9,10 +9,13 @@ import {
   type ImportPreview,
 } from '../lib/backup'
 import type { BackupRows } from '../lib/db'
+import { getSettings, subscribeSettings, updateSettings } from '../lib/settings'
+import { canVibrate } from '../lib/signal'
 import { supabase } from '../lib/supabase'
 import { refreshPending, syncNow } from '../lib/sync'
 import { Button } from '../ui/Button'
 import { Card } from '../ui/Card'
+import { Toggle } from '../ui/Toggle'
 
 interface Pending {
   rows: BackupRows
@@ -30,6 +33,7 @@ export function SettingsCard() {
   const [errors, setErrors] = useState<string[]>([])
   const [pending, setPending] = useState<Pending | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+  const settings = useSyncExternalStore(subscribeSettings, getSettings)
 
   useEffect(() => {
     void getLastExport().then(setLast)
@@ -94,6 +98,19 @@ export function SettingsCard() {
   return (
     <Card className="space-y-3">
       <h2 className="text-2xl">Einstellungen</h2>
+      <h3 className="text-lg">Pausenende</h3>
+      <div className="flex">
+        <Toggle label="Ton" checked={settings.sound} onChange={(v) => void updateSettings({ sound: v })} />
+      </div>
+      {canVibrate() && (
+        <div className="flex">
+          <Toggle
+            label="Vibration"
+            checked={settings.vibration}
+            onChange={(v) => void updateSettings({ vibration: v })}
+          />
+        </div>
+      )}
       <h3 className="text-lg">Backup</h3>
       <p className="text-base">{last ? `Letzter Export: ${fmt(last)}` : 'Noch kein Backup exportiert.'}</p>
       {isBackupStale(last) && (

@@ -25,7 +25,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       <div className="relative z-10">
         <Header />
         <StripeBand />
-        <main className="mx-auto max-w-md space-y-5 p-4 pb-48">
+        <main className="mx-auto max-w-md space-y-5 p-4 pb-[calc(12rem+env(safe-area-inset-bottom))]">
           {children}
         </main>
       </div>

@@ -4,6 +4,7 @@ import { isRampUp, planDayForDate, weekOverview } from '../lib/logger'
 import { plan, type PlanDay } from '../lib/plan'
 import { FALLBACK_QUOTE, pickQuote, QUOTES, RECENT_KEY, type PendingQuote } from '../lib/quotes'
 import { supabase } from '../lib/supabase'
+import { unlockAudio } from '../lib/signal'
 import { saveAndSync } from '../lib/sync'
 import type { LocalRow } from '../lib/types'
 import { Button } from '../ui/Button'
@@ -50,6 +51,7 @@ export function Home({ sessions, extras, onQuote }: HomeProps) {
   const [busy, setBusy] = useState(false)
 
   const start = async (d: PlanDay) => {
+    unlockAudio() // erster Tap der Einheit: Ton fuer das Pausenende freischalten
     setBusy(true)
     try {
       // Session sofort anlegen (nicht erst nach dem Zitat); das Zitat wird nur fuer diesen Start gemerkt.
