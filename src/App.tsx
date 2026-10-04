@@ -2,6 +2,9 @@ import { useEffect } from 'react'
 import { AuthProvider, useAuth } from './auth/AuthProvider'
 import { LoginScreen } from './auth/LoginScreen'
 import { SyncStatusBar } from './SyncStatusBar'
+import { Button } from './ui/Button'
+import { AppLayout } from './ui/AppLayout'
+import { Divider } from './ui/Divider'
 import { DevTools } from './DevTools'
 import { startSync } from './lib/sync'
 import { supabase, supabaseConfigured } from './lib/supabase'
@@ -15,7 +18,7 @@ function Shell() {
 
   if (!supabaseConfigured)
     return (
-      <main className="p-6">
+      <main className="p-6 font-semibold">
         VITE_SUPABASE_URL und VITE_SUPABASE_PUBLISHABLE_KEY in .env eintragen.
       </main>
     )
@@ -23,14 +26,12 @@ function Shell() {
   if (!session) return <LoginScreen />
 
   return (
-    <main className="mx-auto max-w-md space-y-4 p-4">
-      <h1 className="text-2xl font-semibold">Training Tracker</h1>
+    <AppLayout>
       <SyncStatusBar />
+      <Divider />
       {import.meta.env.DEV && <DevTools />}
-      <button onClick={signOut} className="w-full rounded-xl border border-neutral-700 py-3">
-        Abmelden
-      </button>
-    </main>
+      <Button onClick={signOut}>Abmelden</Button>
+    </AppLayout>
   )
 }
 

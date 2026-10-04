@@ -4,11 +4,7 @@
   "ramp_up": {
     "weeks": 2,
     "sets_minus": 1,
-    "min_sets": 2,
-    "rir_target": "3"
-  },
-  "defaults": {
-    "rir_target": "1-3"
+    "min_sets": 2
   },
   "exercises": {
     "hs_incline_press": {
@@ -201,6 +197,7 @@
       "name": "Kabel-Seitheben",
       "equipment": "Kabelzug",
       "attachment": "Einhand-Griff",
+      "unilateral": true,
       "primary_muscle": "side_delts",
       "secondary_muscles": [],
       "alternatives": [
@@ -303,6 +300,7 @@
       "name": "Iso Row (Hammer Strength, Iso-Lateral)",
       "equipment": "Plate-Loaded",
       "attachment": "Neutraler Griff, einarmig nacheinander oder beidseitig",
+      "unilateral": true,
       "primary_muscle": "back_mid",
       "secondary_muscles": [
         "lats",

@@ -1,1 +1,80 @@
+/* Nur woff2, nur Latin, nur benutzte Schnitte (Dateien aus @fontsource, keine externen Server). */
+@font-face {
+  font-family: "Righteous";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../node_modules/@fontsource/righteous/files/righteous-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Yellowtail";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../node_modules/@fontsource/yellowtail/files/yellowtail-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Barlow Semi Condensed";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("../node_modules/@fontsource/barlow-semi-condensed/files/barlow-semi-condensed-latin-600-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Barlow Semi Condensed";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../node_modules/@fontsource/barlow-semi-condensed/files/barlow-semi-condensed-latin-700-normal.woff2") format("woff2");
+}
+
 @import "tailwindcss";
+
+@theme {
+  --color-sky-top: #bde8fa;
+  --color-sky-bottom: #ffd1e8;
+  --color-card: #fff9fd;
+  --color-ink: #2b1b4d;
+  --color-pink: #e91e8c;
+  --color-turq: #00b7c3;
+  --color-baby: #8fd8f5;
+  --color-sun: #ffd23f; /* nur als Flaeche mit dunklem Text */
+  --color-ok: #14a37f;
+  --color-err: #d7263d;
+  --color-neon: #ff5cb8; /* nur als Flaeche oder Kontur */
+
+  --font-display: "Righteous", system-ui, sans-serif;
+  --font-script: "Yellowtail", cursive;
+  --font-sans: "Barlow Semi Condensed", system-ui, sans-serif;
+
+  --shadow-hard: 4px 4px 0 0 var(--color-ink);
+}
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  min-height: 100dvh;
+  background-color: var(--color-sky-bottom);
+  background-image: linear-gradient(to bottom, var(--color-sky-top), var(--color-sky-bottom));
+  background-repeat: no-repeat;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Gewicht, Wiederholungen, Timer: Barlow fett, tabellarische Ziffern. */
+@utility num {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}

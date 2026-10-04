@@ -22,14 +22,16 @@ Hosting: GitHub Pages über GitHub Actions (Vite `base` auf den Repo-Namen).
 - plan.json im Repo ist die einzige Quelle für Übungen und Tagesplan. Nicht in die DB.
 - workout_set.exercise_key verweist auf einen Key in plan.json. Keys nie umbenennen.
 - Ist eine Übung belegt, wird unter dem tatsächlich genutzten Key (alternatives) gespeichert.
-- Wiedereinstieg: ramp_up in plan.json (erste 2 Wochen ein Satz weniger, mind. 2, Ziel-RIR 3).
+- Wiedereinstieg: ramp_up in plan.json (erste 14 Tage ab der ersten Session ein Satz weniger je Übung,
+  mind. 2, dazu der Hinweis "Nicht bis Versagen").
 
 ## Datenregeln
 - weight_kg = Zusatz- bzw. Maschinengewicht. Kurzhanteln: Gewicht pro Hand.
   Plate-Loaded: Platten pro Seite in kg, Stack: Stackgewicht.
 - Einseitige Übungen (Kabel-Seitheben, Iso Row): je Seite ein Satz, side = left/right. Sonst 'both'.
 - Aufwärmsätze: is_warmup = true. Dashboard zählt nur is_warmup = false.
-- rir ist optional, 0-5.
+- Kein RIR im UI. `rir` bleibt optional in der DB. Ein Schalter 'Bis Versagen' speichert rir = 0, sonst null.
+  Dashboard später ohne RIR-Kennzahl.
 
 ## UX-Regeln Logger
 - Ein Satz = max. 2 Taps. Werte der letzten Einheit vorbelegt.
@@ -39,4 +41,32 @@ Hosting: GitHub Pages über GitHub Actions (Vite `base` auf den Repo-Namen).
 
 ## Dashboard
 Harte Sätze pro Muskel und Woche (primary_muscle), geschätztes 1RM (Epley) als Trend,
-Volumen-Load pro Übung, durchschnittliche RIR, Körpergewicht als 7-Tage-Mittel, PRs.
+Volumen-Load pro Übung, Körpergewicht als 7-Tage-Mittel, PRs.
+
+## Design
+App-Name: "Lift Heavy". Miami Vice, 80er/90er, hell, kräftig, mit Bodybuilding-Symbolik (Babyblau und Pink,
+Sonnenuntergang, Palmen, Hanteln). Kein Dark Mode (`color-scheme: light`).
+- Farben als Tailwind-Tokens (src/index.css, @theme): Himmel-Verlauf #BDE8FA (oben) nach #FFD1E8 (unten)
+  als Seitenhintergrund, Karte #FFF9FD, Text/Kontur/Schatten Indigo #2B1B4D, Pink #E91E8C, Türkis #00B7C3,
+  Babyblau #8FD8F5, Sonnengelb #FFD23F, Erfolg #14A37F, Fehler #D7263D, Neon-Pink #FF5CB8.
+  Gelb nur in der Sonne (Grafik), nie als Schriftfarbe und nicht für Buttons oder Etiketten. Rot (Fehler) nur
+  für echte Fehlermeldungen, nie als Buttonfarbe. Neon-Pink nur als Fläche oder Kontur.
+- Kontrast: normaler Text mind. 4,5:1, sehr großer fetter Text mind. 3:1. Erlaubte Textpaare: Indigo auf
+  Karte/Himmel/Neon/Türkis/Babyblau/Gelb/Erfolg, Weiß auf Fehler. Nicht für Text: Weiß/Karte auf Pink, Erfolg
+  oder Türkis, Indigo auf Fehler-Rot, Pink als Schrift (außer der große "Heavy"-Wortmarke).
+- Schrift (@fontsource, nur woff2, nur Latin, nur benutzte Schnitte, keine externen Server): Righteous für
+  Überschriften und Buttons, Yellowtail nur für das Wort "Heavy", Barlow Semi Condensed 600/700 für Text und
+  alle Zahlen (Gewicht, Wiederholungen, Timer; Klasse `num`, tabellarische Ziffern).
+- Form: 3 px Konturen in Indigo, harte Schlagschatten (4 px Versatz, keine Unschärfe) in Indigo, Buttons
+  mind. 56 px hoch, gedrückt verschiebt sich der Button um 4 px. Verläufe nur für Himmel-Hintergrund und Sonne.
+- Marke: Wortmarke "LIFT" (Righteous, Indigo, pinker Schlagschatten) mit "Heavy" (Yellowtail, Pink, 2 px
+  Indigo-Kontur) darunter. Auf Login und in der Kopfzeile. Browser-Titel "Lift Heavy".
+- Symbole: eigene einfarbige Inline-SVGs in src/ui/icons.tsx (keine Emojis, Bilder oder Icon-Bibliothek).
+  Hantel = Sync-Symbol (dreht sich beim Sync), Scheibe = Satzfortschritt, Stoppuhr = Pausentimer,
+  Flamme = "Bis Versagen", Pokal = neuer Rekord, Hantel-Trennlinie, Tagessymbole in `DAY_ICONS`.
+- Bodybuilding-Szenerie (Venice-Beach-Vibes): Strandszene mit Sonne, Wellen und Palmen am unteren Rand
+  (`Scene`), Motto-Banner mit Sternen und Langhanteln (`Ribbon`), Dreistreifen-Band unter der Kopfzeile,
+  große Gerätesymbole an den Seiten auf breiten Bildschirmen. Alles rein dekorativ (`aria-hidden`).
+- Regel: Gewicht, Wiederholungen und Timer stehen immer auf ruhigem, einfarbigem Kartengrund. Dekoration nur
+  in Kopfbereich, an Rändern und auf leeren Flächen, nie hinter Zahlen.
+- UI-Bausteine liegen in src/ui/; keine losen Farbwerte in Komponenten.

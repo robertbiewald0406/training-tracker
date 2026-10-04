@@ -1,6 +1,8 @@
 import { getDb, countPending } from './lib/db'
 import { refreshPending, saveAndSync } from './lib/sync'
 import { supabase } from './lib/supabase'
+import { Button } from './ui/Button'
+import { Card } from './ui/Card'
 
 // Nur in `npm run dev` sichtbar (siehe App.tsx). Eintraege sind als TESTDATEN markiert.
 export function DevTools() {
@@ -31,15 +33,15 @@ export function DevTools() {
     await tx.done
     await refreshPending()
   }
-  const btn = 'w-full rounded-xl border py-3'
   return (
-    <div className="space-y-2">
-      <button onClick={() => void save()} className={`${btn} border-amber-600 text-amber-400`}>
+    <Card className="space-y-3 border-dashed">
+      <h2 className="text-2xl">Dev</h2>
+      <Button variant="baby" onClick={() => void save()}>
         Testdaten speichern
-      </button>
-      <button onClick={() => void clearLocal()} className={`${btn} border-red-700 text-red-400`}>
+      </Button>
+      <Button variant="primary" onClick={() => void clearLocal()}>
         Lokale Daten löschen
-      </button>
-    </div>
+      </Button>
+    </Card>
   )
 }
