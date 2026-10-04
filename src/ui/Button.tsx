@@ -5,7 +5,6 @@ const VARIANTS = {
   primary: 'bg-neon text-ink',
   secondary: 'bg-turq text-ink',
   neutral: 'bg-card text-ink',
-  baby: 'bg-baby text-ink',
 } as const
 
 interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
