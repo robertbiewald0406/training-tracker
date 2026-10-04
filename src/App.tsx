@@ -5,6 +5,7 @@ import { SyncStatusBar } from './SyncStatusBar'
 import { Button } from './ui/Button'
 import { AppLayout } from './ui/AppLayout'
 import { Logger } from './screens/Logger'
+import { SettingsCard } from './screens/SettingsCard'
 import { Divider } from './ui/Divider'
 import { DevTools } from './DevTools'
 import { startSync } from './lib/sync'
@@ -32,6 +33,7 @@ function Shell() {
         extras={
           <>
             <SyncStatusBar />
+            <SettingsCard />
             <Divider />
             {import.meta.env.DEV && <DevTools />}
             <Button onClick={signOut}>Abmelden</Button>

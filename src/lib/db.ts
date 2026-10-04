@@ -174,19 +174,72 @@ export async function getSetsForSession(sessionId: string): Promise<LocalRow<'wo
   return (await db.getAllFromIndex('workout_set', 'by_session', sessionId)).filter((r) => !r._deleted)
 }
 
-/** JSON-Export aller sichtbaren Daten (ohne Tombstones und ohne lokale Metadaten). */
+export const BACKUP_FORMAT = 'lift-heavy-backup'
+export const BACKUP_VERSION = 1
+
+/**
+ * Backup-Daten: Formatversion, Zeitstempel und alle sichtbaren Zeilen aus session, workout_set und bodyweight.
+ * Ohne Tombstones, ohne lokale Metadaten (_sync, _v, ...), ohne meta-Store, ohne user_id. Enthaelt nie Tokens oder Schluessel.
+ */
 export async function exportAll() {
   const strip = (r: any) => {
-    const { _sync, _v, _error, _deleted, ...row } = r
+    const { _sync, _v, _error, _deleted, user_id, ...row } = r
     return row
   }
+  const by = <T,>(f: (x: T) => string) => (a: T, b: T) => f(a).localeCompare(f(b))
   return {
-    app: 'lift-heavy',
+    format: BACKUP_FORMAT,
+    version: BACKUP_VERSION,
     exported_at: new Date().toISOString(),
-    session: (await getAll('session')).map(strip),
-    workout_set: (await getAll('workout_set')).map(strip),
-    bodyweight: (await getAll('bodyweight')).map(strip),
+    session: (await getAll('session')).map(strip).sort(by((x: any) => x.started_at)),
+    workout_set: (await getAll('workout_set'))
+      .map(strip)
+      .sort(by((x: any) => `${x.logged_at}|${String(x.set_no).padStart(6, '0')}`)),
+    bodyweight: (await getAll('bodyweight')).map(strip).sort(by((x: any) => x.measured_on)),
   }
+}
+
+/** Bereits lokal vorhandene Ids (auch Tombstones) und Koerpergewicht-Daten, fuer den Import. */
+export async function existingKeys() {
+  const db = await getDb()
+  return {
+    session: new Set((await db.getAllKeys('session')) as string[]),
+    workout_set: new Set((await db.getAllKeys('workout_set')) as string[]),
+    bodyweight: new Set((await db.getAllKeys('bodyweight')) as string[]),
+    bodyweightDates: new Set((await db.getAll('bodyweight')).map((r) => r.measured_on)),
+  }
+}
+
+export interface BackupRows {
+  session: RowByStore['session'][]
+  workout_set: RowByStore['workout_set'][]
+  bodyweight: RowByStore['bodyweight'][]
+}
+
+/**
+ * Import: fuegt nur hinzu. Bestehende Ids (auch Tombstones) und Koerpergewicht-Tage werden uebersprungen,
+ * nichts Vorhandenes (insbesondere nichts Pending) wird ueberschrieben. Neue Zeilen sind pending und gehen
+ * beim naechsten Sync nach Supabase. Alles in einer Transaktion.
+ */
+export async function importBackupRows(rows: BackupRows) {
+  const db = await getDb()
+  const tx = db.transaction(STORES, 'readwrite')
+  const added = { session: 0, workout_set: 0, bodyweight: 0, skipped: 0 }
+  for (const store of STORES) {
+    const os = tx.objectStore(store) as any
+    for (const row of rows[store] as any[]) {
+      const dupDate = store === 'bodyweight' ? await os.index('by_date').get(row.measured_on) : undefined
+      if ((await os.get(row.id)) || dupDate) {
+        added.skipped++
+        continue
+      }
+      await os.put({ ...row, _sync: 'pending', _v: 1 })
+      added[store]++
+    }
+  }
+  await tx.done
+  if (added.session + added.workout_set + added.bodyweight) notifyDb()
+  return added
 }
 
 export async function getMeta<T>(key: string): Promise<T | undefined> {

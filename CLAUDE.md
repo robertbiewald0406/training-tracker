@@ -52,6 +52,12 @@ Hosting: GitHub Pages über GitHub Actions (Vite `base` auf den Repo-Namen).
 Harte Sätze pro Muskel und Woche (primary_muscle), geschätztes 1RM (Epley) als Trend,
 Volumen-Load pro Übung, Körpergewicht als 7-Tage-Mittel, PRs.
 
+## Backup
+- Einstellungen: "Backup exportieren" (JSON mit Formatversion, Zeitstempel, session/workout_set/bodyweight; ohne
+  Tombstones, meta, Tokens; Teilen-Menü, Fallback Download) und "Backup importieren" (prüft die ganze Datei,
+  Vorschau und Rückfrage, fügt nur hinzu, überschreibt nie vorhandene Ids oder pending, neue Zeilen sind pending).
+  Hinweis, wenn der letzte Export älter als 30 Tage ist (`meta`: backup:lastExport).
+
 ## Zitate
 - src/data/quotes.json (100 Einträge: text, author, source, verified). verified = "belegt" (Autor und Quelle),
   "zugeschrieben" (Autor und Etikett), "original" (nur Wortmarke "Lift Heavy", nie Personennamen).
