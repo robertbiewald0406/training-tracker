@@ -58,6 +58,17 @@ Volumen-Load pro Übung, Körpergewicht als 7-Tage-Mittel, PRs.
   Vorschau und Rückfrage, fügt nur hinzu, überschreibt nie vorhandene Ids oder pending, neue Zeilen sind pending).
   Hinweis, wenn der letzte Export älter als 30 Tage ist (`meta`: backup:lastExport).
 
+## PWA
+- vite-plugin-pwa (Service Worker nur im Build). Vorab gespeichert: alle App-Dateien, Schriften, Icons, Manifest.
+  Manifest: "Lift Heavy", standalone, start_url/scope = Vite `base` (/training-tracker/), Theme-Farbe Pink.
+- Neue Version: wird im Hintergrund geladen, aktiviert sich beim nächsten App-Start; Hinweis "Neue Version" mit
+  Button "Aktualisieren" (kein Neuladen mitten im Training). `navigator.storage.persist()` wird angefragt,
+  das Ergebnis nie vorausgesetzt (Backup bleibt der Schutz).
+- Icons: `npm run icons` (scripts/make-icons.mjs, SVG -> PNG). Quelle der Wahrheit ist das Skript.
+- Offline-Start: Der App-Start wartet nie auf das Netz. Ist ohne Netz der Token abgelaufen, bleibt die
+  gespeicherte Sitzung gültig (Daten sind lokal); Synchronisieren braucht eine gültige Sitzung. Offline wird
+  nicht synchronisiert und ist kein Fehler.
+
 ## Zitate
 - src/data/quotes.json (100 Einträge: text, author, source, verified). verified = "belegt" (Autor und Quelle),
   "zugeschrieben" (Autor und Etikett), "original" (nur Wortmarke "Lift Heavy", nie Personennamen).

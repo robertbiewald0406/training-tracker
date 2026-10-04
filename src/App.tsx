@@ -7,6 +7,7 @@ import { AppLayout } from './ui/AppLayout'
 import { Logger } from './screens/Logger'
 import { SettingsCard } from './screens/SettingsCard'
 import { Divider } from './ui/Divider'
+import { UpdateBanner } from './ui/UpdateBanner'
 import { DevTools } from './DevTools'
 import { loadSettings } from './lib/settings'
 import { startSync } from './lib/sync'
@@ -50,6 +51,7 @@ export default function App() {
   return (
     <AuthProvider>
       <Shell />
+      <UpdateBanner />
     </AuthProvider>
   )
 }

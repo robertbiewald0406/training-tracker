@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="sun" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd23f"/>
+      <stop offset="1" stop-color="#ff5cb8"/>
+    </linearGradient>
+    <clipPath id="disc"><circle cx="256" cy="256" r="165"/></clipPath>
+  </defs>
+  <rect width="512" height="512" fill="#8fd8f5"/>
+  <g transform="translate(256 256) scale(1) translate(-256 -256)">
+  <g clip-path="url(#disc)">
+    <rect x="80" y="80" width="352" height="352" fill="url(#sun)"/>
+    <rect x="80" y="318" width="352" height="9" fill="#8fd8f5"/>
+    <rect x="80" y="344" width="352" height="14" fill="#8fd8f5"/>
+    <rect x="80" y="376" width="352" height="20" fill="#8fd8f5"/>
+  </g>
+  <circle cx="256" cy="256" r="165" fill="none" stroke="#2b1b4d" stroke-width="8"/>
+  <g fill="#e91e8c">
+  <g transform="translate(268 268) scale(17) translate(-12 -12)">
+    <rect x="1.5" y="7" width="3.5" height="10" rx="1.2"/>
+    <rect x="5" y="9" width="2.5" height="6" rx="0.8"/>
+    <rect x="7.5" y="11" width="9" height="2"/>
+    <rect x="16.5" y="9" width="2.5" height="6" rx="0.8"/>
+    <rect x="19" y="7" width="3.5" height="10" rx="1.2"/>
+  </g></g>
+  <g fill="#2b1b4d">
+  <g transform="translate(256 256) scale(17) translate(-12 -12)">
+    <rect x="1.5" y="7" width="3.5" height="10" rx="1.2"/>
+    <rect x="5" y="9" width="2.5" height="6" rx="0.8"/>
+    <rect x="7.5" y="11" width="9" height="2"/>
+    <rect x="16.5" y="9" width="2.5" height="6" rx="0.8"/>
+    <rect x="19" y="7" width="3.5" height="10" rx="1.2"/>
+  </g></g>
+  </g>
+</svg>
