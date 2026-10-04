@@ -43,7 +43,7 @@ export function SyncStatusBar() {
           Sync-Fehler: {s.error}
         </p>
       )}
-      <Button variant="secondary" onClick={() => void syncNow(supabase)} disabled={s.syncing}>
+      <Button variant="secondary" onClick={() => void syncNow(supabase, { pull: true })} disabled={s.syncing}>
         Jetzt synchronisieren
       </Button>
     </Card>

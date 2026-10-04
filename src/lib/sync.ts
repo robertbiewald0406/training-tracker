@@ -9,6 +9,7 @@ import {
   markSynced,
   saveLocal,
 } from './db'
+import { pullAll } from './pull'
 import type { RowByStore, StoreName } from './types'
 
 export interface SyncStatus {
@@ -57,17 +58,27 @@ function toRemote<S extends StoreName>(rec: any): RowByStore[S] {
 
 let running: Promise<void> | null = null
 let again = false
+let againPull = false
 
-/** Überträgt alle pending-Einträge. Parallele Aufrufe werden zusammengefasst. */
-export function syncNow(client: SupabaseClient): Promise<void> {
+/**
+ * Sendet alle pending-Eintraege (Uploads zuerst) und holt danach, wenn `pull` gesetzt ist, alle Zeilen aus Supabase.
+ * Pull nur beim Start/Login, bei Rueckkehr in die App, online-Event und manuellem Sync, nicht nach jedem Speichern.
+ * Parallele Aufrufe werden zusammengefasst.
+ */
+export function syncNow(client: SupabaseClient, opts: { pull?: boolean } = {}): Promise<void> {
   if (running) {
     again = true
+    if (opts.pull) againPull = true
     return running
   }
+  let wantPull = Boolean(opts.pull)
   running = (async () => {
     do {
       again = false
-      await runOnce(client)
+      const doPull = wantPull || againPull
+      wantPull = false
+      againPull = false
+      await runOnce(client, doPull)
     } while (again)
   })().finally(() => {
     running = null
@@ -75,7 +86,7 @@ export function syncNow(client: SupabaseClient): Promise<void> {
   return running
 }
 
-async function runOnce(client: SupabaseClient) {
+async function runOnce(client: SupabaseClient, pull: boolean) {
   setStatus({ syncing: true, online: typeof navigator === 'undefined' ? true : navigator.onLine })
   let error: string | null = null
   try {
@@ -118,6 +129,12 @@ async function runOnce(client: SupabaseClient) {
           }
         }
       }
+      // Erst nach den Uploads pullen. Ohne Netz wird gar nicht erst versucht (App startet mit lokalen Daten).
+      if (pull && !(typeof navigator !== 'undefined' && navigator.onLine === false)) {
+        const r = await pullAll(client)
+        const msgs = [...r.errors, ...r.conflicts]
+        if (msgs.length) error = [error, ...msgs].filter(Boolean).join(' | ')
+      }
     }
   } catch (e) {
     error = e instanceof Error ? e.message : String(e)
@@ -153,17 +170,17 @@ export async function deleteAndSync(client: SupabaseClient, store: StoreName, id
 export function startSync(client: SupabaseClient): () => void {
   const onOnline = () => {
     setStatus({ online: true })
-    void syncNow(client)
+    void syncNow(client, { pull: true })
   }
   const onOffline = () => setStatus({ online: false })
   const onVisible = () => {
-    if (document.visibilityState === 'visible') void syncNow(client)
+    if (document.visibilityState === 'visible') void syncNow(client, { pull: true })
   }
   window.addEventListener('online', onOnline)
   document.addEventListener('visibilitychange', onVisible)
   window.addEventListener('offline', onOffline)
   void refreshPending()
-  void syncNow(client)
+  void syncNow(client, { pull: true }) // blockiert den App-Start nie
   return () => {
     window.removeEventListener('online', onOnline)
     document.removeEventListener('visibilitychange', onVisible)

@@ -19,7 +19,7 @@ export function Header() {
     <header className="flex items-center justify-between gap-3 px-4 pt-4">
       <Wordmark size="sm" />
       <button
-        onClick={() => void syncNow(supabase)}
+        onClick={() => void syncNow(supabase, { pull: true })}
         aria-label={label}
         className={`relative flex size-14 items-center justify-center border-[3px] border-ink shadow-hard active:translate-x-1 active:translate-y-1 active:shadow-none ${tone}`}
       >

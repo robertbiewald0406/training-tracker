@@ -245,3 +245,56 @@ export async function applyRemote<S extends StoreName>(
   if (applied) notifyDb()
   return { applied, skipped }
 }
+
+/**
+ * Nach vollstaendigem Pull einer Tabelle: lokale Zeilen entfernen, die als synchronisiert markiert sind und
+ * remote nicht mehr existieren. Niemals: pending-Eintraege und Tombstones (beide sind _sync = 'pending').
+ * Gilt fuer workout_set und bodyweight; Einheiten haben removeMissingSessions.
+ */
+export async function removeMissing(
+  store: 'workout_set' | 'bodyweight',
+  remoteIds: Set<string>,
+): Promise<string[]> {
+  const db = await getDb()
+  const tx = db.transaction(store, 'readwrite')
+  const os = tx.objectStore(store) as any
+  const removed: string[] = []
+  for (const r of (await os.getAll()) as LocalRow<typeof store>[]) {
+    if (r._sync === 'synced' && !r._deleted && !remoteIds.has(r.id)) {
+      await os.delete(r.id)
+      removed.push(r.id)
+    }
+  }
+  await tx.done
+  if (removed.length) notifyDb()
+  return removed
+}
+
+/**
+ * Wie removeMissing, fuer Einheiten. Eine fehlende Einheit wird samt ihren lokalen Saetzen entfernt, aber nur,
+ * wenn keiner der Saetze pending ist (auch Tombstones zaehlen). Sonst bleibt sie erhalten und wird als Konflikt gemeldet.
+ */
+export async function removeMissingSessions(
+  remoteIds: Set<string>,
+): Promise<{ removed: string[]; conflicts: LocalRow<'session'>[] }> {
+  const db = await getDb()
+  const tx = db.transaction(['session', 'workout_set'], 'readwrite')
+  const sessions = tx.objectStore('session')
+  const sets = tx.objectStore('workout_set')
+  const removed: string[] = []
+  const conflicts: LocalRow<'session'>[] = []
+  for (const s of await sessions.getAll()) {
+    if (s._sync !== 'synced' || s._deleted || remoteIds.has(s.id)) continue
+    const own = await sets.index('by_session').getAll(s.id)
+    if (own.some((x) => x._sync === 'pending')) {
+      conflicts.push(s)
+      continue
+    }
+    for (const x of own) await sets.delete(x.id)
+    await sessions.delete(s.id)
+    removed.push(s.id)
+  }
+  await tx.done
+  if (removed.length) notifyDb()
+  return { removed, conflicts }
+}
