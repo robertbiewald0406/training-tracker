@@ -1,12 +1,14 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { IDBFactory } from 'fake-indexeddb'
-import { applyRemote, getAll, resetDbHandle, saveLocal } from './db'
+import { applyRemote, deleteLocal, exportAll, getAll, getDb, resetDbHandle, saveLocal } from './db'
 import { syncNow } from './sync'
 
 type Call = { table: string; rows: any[]; opts: any }
+type Del = { table: string; ids: string[] }
 
-function mockClient(opts: { signedIn?: boolean; failTable?: string } = {}) {
+function mockClient(opts: { signedIn?: boolean; failTable?: string; failDelete?: boolean } = {}) {
   const calls: Call[] = []
+  const deletes: Del[] = []
   const client = {
     auth: {
       getSession: async () => ({ data: { session: opts.signedIn === false ? null : { user: {} } } }),
@@ -16,9 +18,15 @@ function mockClient(opts: { signedIn?: boolean; failTable?: string } = {}) {
         calls.push({ table, rows, opts: o })
         return { error: table === opts.failTable ? { message: 'boom' } : null }
       },
+      delete: () => ({
+        in: async (_col: string, ids: string[]) => {
+          deletes.push({ table, ids })
+          return { error: opts.failDelete ? { message: 'nope' } : null }
+        },
+      }),
     }),
   }
-  return { client: client as any, calls }
+  return { client: client as any, calls, deletes }
 }
 
 const session = (id = crypto.randomUUID()) => ({
@@ -138,5 +146,68 @@ describe('applyRemote (Pull-Grundlage)', () => {
     expect(all.find((r) => r.id === mine.id)!.note).toBe('lokal')
     expect(all.find((r) => r.id === other.id)!._sync).toBe('synced')
     expect(Object.keys(all[0])).not.toContain('user_id')
+  })
+})
+
+describe('Tombstones und Loesch-Sync', () => {
+  it('Loeschen blendet den Satz sofort aus, auch wenn er noch nicht synchronisiert war', async () => {
+    const s = session()
+    await saveLocal('session', s)
+    const w = set(s.id)
+    await saveLocal('workout_set', w)
+    await deleteLocal('workout_set', w.id)
+    expect(await getAll('workout_set')).toHaveLength(0) // Lesezugriffe blenden Tombstones aus
+    expect((await (await getDb()).getAll('workout_set'))[0]._deleted).toBe(true) // Datensatz bleibt bis zur Bestaetigung
+  })
+
+  it('sendet delete und entfernt den Tombstone erst nach Bestaetigung; ein geloeschter Satz wird nicht mehr hochgeladen', async () => {
+    const s = session()
+    await saveLocal('session', s)
+    const w = set(s.id)
+    await saveLocal('workout_set', w)
+    await deleteLocal('workout_set', w.id)
+    const { client, calls, deletes } = mockClient()
+    await syncNow(client)
+    expect(deletes).toEqual([{ table: 'workout_set', ids: [w.id] }])
+    expect(calls.map((c) => c.table)).toEqual(['session']) // kein Upsert fuer den Tombstone
+    expect(await (await getDb()).getAll('workout_set')).toHaveLength(0)
+  })
+
+  it('bei Fehler bleibt der Tombstone erhalten und der Fehler ist sichtbar', async () => {
+    const s = session()
+    await saveLocal('session', s)
+    const w = set(s.id)
+    await saveLocal('workout_set', w)
+    await deleteLocal('workout_set', w.id)
+    const { client } = mockClient({ failDelete: true })
+    await syncNow(client)
+    const raw = await (await getDb()).getAll('workout_set')
+    expect(raw).toHaveLength(1)
+    expect(raw[0]._deleted).toBe(true)
+    expect(raw[0]._sync).toBe('pending')
+    expect(raw[0]._error).toBe('nope')
+  })
+
+  it('applyRemote spielt geloeschte Saetze nicht wieder ein', async () => {
+    const s = session()
+    const w = set(s.id)
+    await saveLocal('workout_set', w)
+    await deleteLocal('workout_set', w.id)
+    const res = await applyRemote('workout_set', [{ ...w, user_id: 'u' } as any])
+    expect(res).toEqual({ applied: 0, skipped: 1 })
+    expect(await getAll('workout_set')).toHaveLength(0)
+  })
+
+  it('JSON-Export blendet Tombstones und lokale Metadaten aus', async () => {
+    const s = session()
+    await saveLocal('session', s)
+    const keep = set(s.id)
+    const gone = set(s.id)
+    await saveLocal('workout_set', keep)
+    await saveLocal('workout_set', gone)
+    await deleteLocal('workout_set', gone.id)
+    const out = await exportAll()
+    expect(out.workout_set.map((r: any) => r.id)).toEqual([keep.id])
+    expect(Object.keys(out.workout_set[0]).filter((k) => k.startsWith('_'))).toEqual([])
   })
 })

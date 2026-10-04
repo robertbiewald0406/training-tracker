@@ -3,6 +3,9 @@
 ## Prinzipien
 - Offline-first: Satz sofort lokal speichern (IndexedDB), danach Upsert zu Supabase.
 - Lokale Einträge erst nach Bestätigung durch Supabase löschen. Nie Daten verwerfen.
+- Lokal löschen = Tombstone (`_deleted`, bleibt pending). Der Datensatz wird erst nach bestätigtem DELETE in
+  Supabase entfernt. Alle Lesezugriffe, Export und Pull (`applyRemote`) respektieren Tombstones.
+- IndexedDB-Upgrades sind rein additiv (aktuell Version 2, Store `meta` nur lokal, nie synchronisiert).
 - Alle IDs sind client-seitige UUIDs (crypto.randomUUID()).
 - Neue Tabellen: RLS + Policy user_id = auth.uid() + explizites grant to authenticated, nie an anon.
 - Im Frontend nur der Publishable Key (VITE_SUPABASE_PUBLISHABLE_KEY). Secret/service_role Key

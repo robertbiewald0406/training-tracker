@@ -44,6 +44,7 @@ export interface LocalMeta {
   _sync: SyncState
   _v: number // wird bei jedem lokalen Schreiben erhöht
   _error?: string
+  _deleted?: boolean // Tombstone: lokal geloescht, Loeschung zu Supabase steht noch aus
 }
 
 export type LocalRow<S extends StoreName> = RowByStore[S] & LocalMeta

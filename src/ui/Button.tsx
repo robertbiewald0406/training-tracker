@@ -17,7 +17,7 @@ export function Button({ variant = 'neutral', className = '', ...p }: Props) {
     <button
       className={`flex min-h-14 w-full items-center justify-center gap-2 border-[3px] border-ink px-4 font-display text-xl uppercase tracking-wider
         shadow-hard transition-transform active:translate-x-1 active:translate-y-1 active:shadow-none
-        disabled:opacity-60 disabled:shadow-none ${VARIANTS[variant]} ${className}`}
+        disabled:bg-card disabled:text-[#6b5b8c] disabled:shadow-none ${VARIANTS[variant]} ${className}`}
       {...p}
     />
   )

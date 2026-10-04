@@ -1,4 +1,4 @@
-import { getDb, countPending } from './lib/db'
+import { getDb, countPending, notifyDb } from './lib/db'
 import { refreshPending, saveAndSync } from './lib/sync'
 import { supabase } from './lib/supabase'
 import { Button } from './ui/Button'
@@ -32,6 +32,7 @@ export function DevTools() {
     await Promise.all(stores.map((s) => tx.objectStore(s).clear()))
     await tx.done
     await refreshPending()
+    notifyDb()
   }
   return (
     <Card className="space-y-3 border-dashed">

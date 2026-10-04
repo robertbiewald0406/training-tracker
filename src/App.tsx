@@ -4,6 +4,7 @@ import { LoginScreen } from './auth/LoginScreen'
 import { SyncStatusBar } from './SyncStatusBar'
 import { Button } from './ui/Button'
 import { AppLayout } from './ui/AppLayout'
+import { Logger } from './screens/Logger'
 import { Divider } from './ui/Divider'
 import { DevTools } from './DevTools'
 import { startSync } from './lib/sync'
@@ -27,10 +28,16 @@ function Shell() {
 
   return (
     <AppLayout>
-      <SyncStatusBar />
-      <Divider />
-      {import.meta.env.DEV && <DevTools />}
-      <Button onClick={signOut}>Abmelden</Button>
+      <Logger
+        extras={
+          <>
+            <SyncStatusBar />
+            <Divider />
+            {import.meta.env.DEV && <DevTools />}
+            <Button onClick={signOut}>Abmelden</Button>
+          </>
+        }
+      />
     </AppLayout>
   )
 }

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Header } from './Header'
-import { Ribbon, StripeBand } from './Ribbon'
+import { StripeBand } from './Ribbon'
 import { Scene } from './Scene'
 import { Barbell, Dumbbell, Kettlebell, Trophy } from './icons'
 
@@ -26,7 +26,6 @@ export function AppLayout({ children }: { children: ReactNode }) {
         <Header />
         <StripeBand />
         <main className="mx-auto max-w-md space-y-5 p-4 pb-48">
-          <Ribbon />
           {children}
         </main>
       </div>

@@ -1,5 +1,14 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { countPending, getPending, markError, markSynced, saveLocal } from './db'
+import {
+  countPending,
+  deleteLocal,
+  getPending,
+  getPendingDeletes,
+  markDeleted,
+  markError,
+  markSynced,
+  saveLocal,
+} from './db'
 import type { RowByStore, StoreName } from './types'
 
 export interface SyncStatus {
@@ -42,7 +51,7 @@ const BATCH = 200
 
 /** Entfernt lokale Metadaten und user_id. user_id wird nie vom Client gesendet. */
 function toRemote<S extends StoreName>(rec: any): RowByStore[S] {
-  const { _sync, _v, _error, user_id, ...row } = rec
+  const { _sync, _v, _error, _deleted, user_id, ...row } = rec
   return row
 }
 
@@ -75,6 +84,21 @@ async function runOnce(client: SupabaseClient) {
       error = 'Nicht angemeldet, Einträge bleiben lokal gespeichert.'
     } else {
       outer: for (const store of ORDER) {
+        // Erst Loeschungen (Tombstones), dann Upserts. Tombstone erst nach bestaetigtem Delete entfernen.
+        const dels = await getPendingDeletes(store)
+        for (let i = 0; i < dels.length; i += BATCH) {
+          const batch = dels.slice(i, i + BATCH)
+          try {
+            const { error: err } = await client.from(store).delete().in('id', batch.map((r) => r.id))
+            if (err) throw new Error(err.message)
+            await markDeleted(store, batch.map((r) => ({ id: r.id, _v: r._v })))
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e)
+            await markError(store, batch.map((r) => r.id), msg)
+            error = `${store} löschen: ${msg}`
+            break outer
+          }
+        }
         const pending = await getPending(store)
         for (let i = 0; i < pending.length; i += BATCH) {
           const batch = pending.slice(i, i + BATCH)
@@ -116,6 +140,13 @@ export async function saveAndSync<S extends StoreName>(
   await refreshPending()
   void syncNow(client)
   return rec
+}
+
+/** Loescht lokal per Tombstone (sofort) und stoesst die Loeschung in Supabase an. */
+export async function deleteAndSync(client: SupabaseClient, store: StoreName, id: string) {
+  await deleteLocal(store, id)
+  await refreshPending()
+  void syncNow(client)
 }
 
 /** Sync beim App-Start, beim online-Event und beim Zurückkehren in den Vordergrund. Gibt eine Abmelde-Funktion zurück. */
