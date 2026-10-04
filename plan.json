@@ -2,7 +2,7 @@
   "version": 1,
   "notes": "5er Split, je Muskel 1x pro Woche. Laufen Sa/So, optional Mo kurz und locker. Gewicht in weight_kg = Zusatzgewicht bzw. Stack-/Plattengewicht der Maschine, bei Kurzhanteln pro Hand.",
   "ramp_up": {
-    "weeks": 2,
+    "weeks": 0,
     "sets_minus": 1,
     "min_sets": 2
   },

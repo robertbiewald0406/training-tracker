@@ -63,6 +63,10 @@ describe('Wochenuebersicht', () => {
   })
 })
 
+// Die Tests fuer aktive Anlaufphase nutzen weeks = 2, unabhaengig vom aktuellen Wert in plan.json.
+const rampPlan: Plan = { ...plan, ramp_up: { ...plan.ramp_up, weeks: 2 } }
+const offPlan: Plan = { ...plan, ramp_up: { ...plan.ramp_up, weeks: 0 } }
+
 describe('Ramp-up', () => {
   const item = (sets: number) => ({ exercise_key: 'x', sets, rep_min: 6, rep_max: 10, rest_sec: 90 })
   it('ein Satz weniger, mindestens 2, nie mehr als geplant', () => {
@@ -72,14 +76,27 @@ describe('Ramp-up', () => {
     expect(setsFor(item(1), true, plan)).toBe(1)
     expect(setsFor(item(4), false, plan)).toBe(4)
   })
+  it('weeks = 0: nie aktiv (auch ohne Einheiten) und volle Satzzahl aus dem Plan', () => {
+    const first = new Date(2026, 9, 5, 10)
+    const sessions = [sess('a', 'mo_brust', first.toISOString())]
+    expect(isRampUp(new Date(2026, 9, 5), [], offPlan)).toBe(false)
+    expect(isRampUp(new Date(2026, 9, 5, 11), sessions, offPlan)).toBe(false)
+    for (const day of plan.days)
+      for (const item of day.items)
+        expect(setsFor(item, isRampUp(new Date(2026, 9, 5), [], offPlan), offPlan)).toBe(item.sets)
+  })
+  it('plan.json hat die Anlaufphase abgeschaltet (weeks = 0)', () => {
+    expect(plan.ramp_up.weeks).toBe(0)
+    expect(isRampUp(new Date(), [], plan)).toBe(false)
+  })
   it('aktiv ohne Einheit, bis 14 Tage nach der ersten, danach nicht mehr; Testdaten zaehlen nicht', () => {
     const first = new Date(2026, 9, 5, 10)
     const sessions = [sess('a', 'mo_brust', first.toISOString())]
-    expect(isRampUp(new Date(2026, 9, 5), [], plan)).toBe(true)
-    expect(isRampUp(new Date(2026, 9, 18, 9), sessions, plan)).toBe(true) // Tag 13
-    expect(isRampUp(new Date(2026, 9, 19, 10), sessions, plan)).toBe(false) // genau 14 Tage
-    expect(isRampUp(new Date(2026, 9, 20), sessions, plan)).toBe(false)
-    expect(isRampUp(new Date(2026, 9, 25), [sess('t', 'test', '2000-01-01T00:00:00Z')], plan)).toBe(true)
+    expect(isRampUp(new Date(2026, 9, 5), [], rampPlan)).toBe(true)
+    expect(isRampUp(new Date(2026, 9, 18, 9), sessions, rampPlan)).toBe(true) // Tag 13
+    expect(isRampUp(new Date(2026, 9, 19, 10), sessions, rampPlan)).toBe(false) // genau 14 Tage
+    expect(isRampUp(new Date(2026, 9, 20), sessions, rampPlan)).toBe(false)
+    expect(isRampUp(new Date(2026, 9, 25), [sess('t', 'test', '2000-01-01T00:00:00Z')], rampPlan)).toBe(true)
   })
 })
 

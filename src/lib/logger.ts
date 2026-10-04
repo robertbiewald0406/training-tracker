@@ -38,8 +38,9 @@ export function weekOverview(plan: Plan, sessions: SessionLike[], now: Date) {
   }))
 }
 
-/** Ramp-up: aktiv ohne Plan-Einheit oder innerhalb von weeks*7 Tagen ab der ersten Plan-Einheit. */
+/** Ramp-up: aktiv ohne Plan-Einheit oder innerhalb von weeks*7 Tagen ab der ersten Plan-Einheit. weeks = 0: aus. */
 export function isRampUp(now: Date, sessions: SessionLike[], plan: Plan): boolean {
+  if (!(plan.ramp_up.weeks > 0)) return false
   const keys = new Set(plan.days.map((d) => d.key))
   const times = sessions.filter((s) => keys.has(s.day_key)).map((s) => new Date(s.started_at).getTime())
   if (!times.length) return true

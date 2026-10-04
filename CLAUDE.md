@@ -25,8 +25,9 @@ Hosting: GitHub Pages über GitHub Actions (Vite `base` auf den Repo-Namen).
 - plan.json im Repo ist die einzige Quelle für Übungen und Tagesplan. Nicht in die DB.
 - workout_set.exercise_key verweist auf einen Key in plan.json. Keys nie umbenennen.
 - Ist eine Übung belegt, wird unter dem tatsächlich genutzten Key (alternatives) gespeichert.
-- Wiedereinstieg: ramp_up in plan.json (erste 14 Tage ab der ersten Session ein Satz weniger je Übung,
-  mind. 2, dazu der Hinweis "Nicht bis Versagen").
+- Wiedereinstieg: ramp_up in plan.json. `weeks` > 0: so viele Wochen ab der ersten Session ein Satz weniger
+  je Übung (mind. `min_sets`), dazu der Hinweis "Nicht bis Versagen empfohlen". `weeks` = 0: aus, immer die
+  volle Satzzahl, der Hinweis erscheint nirgends. Aktuell 0.
 
 ## Datenregeln
 - weight_kg = Zusatz- bzw. Maschinengewicht. Kurzhanteln: Gewicht pro Hand.
@@ -45,6 +46,14 @@ Hosting: GitHub Pages über GitHub Actions (Vite `base` auf den Repo-Namen).
 ## Dashboard
 Harte Sätze pro Muskel und Woche (primary_muscle), geschätztes 1RM (Epley) als Trend,
 Volumen-Load pro Übung, Körpergewicht als 7-Tage-Mittel, PRs.
+
+## Zitate
+- src/data/quotes.json (100 Einträge: text, author, source, verified). verified = "belegt" (Autor und Quelle),
+  "zugeschrieben" (Autor und Etikett), "original" (nur Wortmarke "Lift Heavy", nie Personennamen).
+- Beim Tap auf "Einheit starten" (Session wird sofort angelegt) erscheint vor der ersten Übung eine
+  Vollbild-Karte mit Button "Los". Auswahl zufällig, keines der letzten 30 gezeigten (Liste in meta,
+  nie synchronisiert). Bei Wiederaufnahme einer laufenden Einheit kein Zitat. Leere oder defekte Liste
+  fällt auf einen neutralen Text zurück, nie auf einen Absturz.
 
 ## Design
 App-Name: "Lift Heavy". Miami Vice, 80er/90er, hell, kräftig, mit Bodybuilding-Symbolik (Babyblau und Pink,

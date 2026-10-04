@@ -1,6 +1,8 @@
 import { useState, type ReactNode } from 'react'
+import { getMeta, setMeta } from '../lib/db'
 import { isRampUp, planDayForDate, weekOverview } from '../lib/logger'
 import { plan, type PlanDay } from '../lib/plan'
+import { FALLBACK_QUOTE, pickQuote, QUOTES, RECENT_KEY, type PendingQuote } from '../lib/quotes'
 import { supabase } from '../lib/supabase'
 import { saveAndSync } from '../lib/sync'
 import type { LocalRow } from '../lib/types'
@@ -12,9 +14,9 @@ import { Check, DAY_ICONS, Flame } from '../ui/icons'
 const WEEKDAYS = ['', 'Mo', 'Di', 'Mi', 'Do', 'Fr']
 const WEEKDAYS_LONG = ['', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag']
 
-export async function startSession(day: PlanDay) {
+export async function startSession(day: PlanDay, id: string = crypto.randomUUID()) {
   await saveAndSync(supabase, 'session', {
-    id: crypto.randomUUID(),
+    id,
     day_key: day.key,
     started_at: new Date().toISOString(),
     ended_at: null,
@@ -22,7 +24,24 @@ export async function startSession(day: PlanDay) {
   })
 }
 
-export function Home({ sessions, extras }: { sessions: LocalRow<'session'>[]; extras?: ReactNode }) {
+/** Zitat waehlen (keines der letzten 30, Liste liegt in meta). Darf den Start nie blockieren. */
+async function chooseQuote() {
+  try {
+    const { quote, recent } = pickQuote(QUOTES, await getMeta<unknown>(RECENT_KEY))
+    await setMeta(RECENT_KEY, recent)
+    return quote
+  } catch {
+    return FALLBACK_QUOTE
+  }
+}
+
+interface HomeProps {
+  sessions: LocalRow<'session'>[]
+  extras?: ReactNode
+  onQuote: (p: PendingQuote) => void
+}
+
+export function Home({ sessions, extras, onQuote }: HomeProps) {
   const now = new Date()
   const today = planDayForDate(now, plan)
   const rampUp = isRampUp(now, sessions, plan)
@@ -33,7 +52,10 @@ export function Home({ sessions, extras }: { sessions: LocalRow<'session'>[]; ex
   const start = async (d: PlanDay) => {
     setBusy(true)
     try {
-      await startSession(d)
+      // Session sofort anlegen (nicht erst nach dem Zitat); das Zitat wird nur fuer diesen Start gemerkt.
+      const id = crypto.randomUUID()
+      onQuote({ sessionId: id, quote: await chooseQuote() })
+      await startSession(d, id)
     } finally {
       setBusy(false)
     }
