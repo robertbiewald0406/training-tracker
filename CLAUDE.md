@@ -69,6 +69,13 @@ Volumen-Load pro Übung, Körpergewicht als 7-Tage-Mittel, PRs.
   gespeicherte Sitzung gültig (Daten sind lokal); Synchronisieren braucht eine gültige Sitzung. Offline wird
   nicht synchronisiert und ist kein Fehler.
 
+## Deploy
+- GitHub Pages über .github/workflows/deploy.yml (Push auf main: Tests, Build, Veröffentlichung).
+  VITE_SUPABASE_URL und VITE_SUPABASE_PUBLISHABLE_KEY kommen aus GitHub-Variablen (Settings > Secrets and
+  variables > Actions > Variables), nie aus dem Repo. Der Workflow bricht ab, wenn sie fehlen, wenn der Key ein
+  Secret/service_role-Key ist, oder wenn ein Secret oder Dev-Text im Build steht.
+- Vite `base` = Repo-Name (/training-tracker/). Wird das Repo umbenannt, `BASE` in vite.config.ts anpassen.
+
 ## Zitate
 - src/data/quotes.json (100 Einträge: text, author, source, verified). verified = "belegt" (Autor und Quelle),
   "zugeschrieben" (Autor und Etikett), "original" (nur Wortmarke "Lift Heavy", nie Personennamen).
