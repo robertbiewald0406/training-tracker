@@ -59,7 +59,7 @@ export function LoginScreen() {
               </p>
             )}
             <Dumbbell className="mx-auto size-10 text-ink" />
-            <Button variant="primary" disabled={busy}>
+            <Button type="submit" variant="primary" disabled={busy}>
               {busy ? 'Anmelden …' : 'Anmelden'}
             </Button>
           </Card>
