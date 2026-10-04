@@ -102,6 +102,11 @@ export async function confirmHeldReconcile(
 }
 
 async function runOnce(client: SupabaseClient, pull: boolean, force: boolean) {
+  // Ohne Netz gar nicht erst versuchen (supabase-js wiederholt Anfragen lange). Offline ist kein Fehler.
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    setStatus({ syncing: false, online: false, pending: await countPending() })
+    return
+  }
   setStatus({ syncing: true, online: typeof navigator === 'undefined' ? true : navigator.onLine })
   let error: string | null = null
   let heldUpdate: { value: SyncStatus['held'] } | null = null

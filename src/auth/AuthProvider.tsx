@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
+import { loadInitialSession, resolveSession } from './offlineSession'
 
 interface AuthCtx {
   session: Session | null
@@ -15,12 +16,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // getSession liest die lokal gespeicherte Session, funktioniert auch offline.
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
+    // Ohne Netz und mit abgelaufenem Token liefert getSession keine Sitzung: dann bleibt die gespeicherte bestehen
+    // (die Daten sind lokal; zum Synchronisieren wird eine gueltige Sitzung gebraucht).
+    void loadInitialSession(supabase.auth, localStorage, navigator.onLine).then((s) => {
+      setSession(s)
       setLoading(false)
     })
-    const { data } = supabase.auth.onAuthStateChange((_e, s) => setSession(s))
+    const { data } = supabase.auth.onAuthStateChange((event, s) => {
+      if (event === 'SIGNED_OUT') setSession(null)
+      else setSession(resolveSession(s, null, localStorage, navigator.onLine))
+    })
     return () => data.subscription.unsubscribe()
   }, [])
 
@@ -31,7 +36,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return 'E-Mail oder Passwort falsch.'
   }
   const signOut = async () => {
-    await supabase.auth.signOut()
+    try {
+      await supabase.auth.signOut() // widerruft die Sitzung auch auf dem Server
+    } catch {
+      /* ohne Netz: lokal abmelden genuegt */
+    } finally {
+      await supabase.auth.signOut({ scope: 'local' })
+    }
   }
 
   return <Ctx.Provider value={{ session, loading, signIn, signOut }}>{children}</Ctx.Provider>
