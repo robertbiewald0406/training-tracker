@@ -1,22 +1,41 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { IDBFactory } from 'fake-indexeddb'
 import { deleteLocal, getAll, getDb, resetDbHandle, saveLocal } from './db'
-import { PAGE, pullAll } from './pull'
-import { syncNow } from './sync'
+import { AUTH_EXPIRED_MESSAGE, BRAKE_MAX_FRACTION, BRAKE_MIN_ROWS, PAGE, pullAll, reconcileBrake } from './pull'
+import { confirmHeldReconcile, getSyncStatus, syncNow } from './sync'
 
 type Tables = Record<'session' | 'workout_set' | 'bodyweight', any[]>
 
 interface Opts {
   cap?: number // Server liefert hoechstens so viele Zeilen pro Abfrage (z. B. Projekt-Limit)
   failAt?: { table: string; call: number } // call = laufende Nummer der Abfrage dieser Tabelle (1-basiert)
+  failError?: { message: string; status?: number } // Fehlerobjekt fuer failAt (Standard: Netzwerk)
+  // Anmeldung: gueltig (Standard), abgelaufen, keine Sitzung, oder laeuft waehrend des Pulls ab
+  auth?: 'valid' | 'expired' | 'none' | 'expires-during'
+  refreshWorks?: boolean // erneuern klappt (nur bei 'expired')
 }
+const future = () => Math.floor(Date.now() / 1000) + 3600
+const past = () => Math.floor(Date.now() / 1000) - 3600
 
 /** In-Memory-Supabase: select().order().range() mit Seitenlimit, upsert/delete schreiben in die Tabellen. */
 function remote(tables: Tables, opts: Opts = {}) {
   const log: string[] = []
   const counts: Record<string, number> = {}
+  let sessionCalls = 0
+  const mode = opts.auth ?? 'valid'
   const client = {
-    auth: { getSession: async () => ({ data: { session: { user: {} } } }) },
+    auth: {
+      getSession: async () => {
+        sessionCalls++
+        const expired = mode === 'expired' || (mode === 'expires-during' && sessionCalls > 1)
+        if (mode === 'none') return { data: { session: null } }
+        return { data: { session: { user: {}, expires_at: expired ? past() : future() } } }
+      },
+      refreshSession: async () =>
+        opts.refreshWorks
+          ? { data: { session: { user: {}, expires_at: future() } }, error: null }
+          : { data: { session: null }, error: { message: 'Refresh Token Not Found' } },
+    },
     from: (table: keyof Tables) => ({
       select: () => ({
         order: () => ({
@@ -24,7 +43,7 @@ function remote(tables: Tables, opts: Opts = {}) {
             counts[table] = (counts[table] ?? 0) + 1
             log.push(`select:${table}`)
             if (opts.failAt && opts.failAt.table === table && opts.failAt.call === counts[table])
-              return { data: null, error: { message: 'Netzwerk weg' } }
+              return { data: null, error: opts.failError ?? { message: 'Netzwerk weg' } }
             const sorted = [...tables[table]].sort((x, y) => (x.id < y.id ? -1 : 1))
             const max = Math.min(b - a + 1, opts.cap ?? Infinity)
             return { data: sorted.slice(a, a + max), error: null }
@@ -127,7 +146,7 @@ describe('Pull', () => {
     await putSynced('workout_set', gone)
     await putSynced('bodyweight', oldBw)
 
-    const r = await pullAll(remote(t).client)
+    const r = await pullAll(remote(t).client, { force: true }) // Abgleich-Logik, Bremse separat getestet
 
     expect(r.errors).toEqual([])
     expect(r.removed).toBe(2)
@@ -140,7 +159,7 @@ describe('Pull', () => {
     const s = session()
     await putSynced('session', s)
     await putSynced('workout_set', set(s.id))
-    const r = await pullAll(remote(empty()).client)
+    const r = await pullAll(remote(empty()).client, { force: true }) // leerer Server loest sonst die Bremse aus
     expect(r.removed).toBe(2)
     expect(await getAll('session')).toHaveLength(0)
     expect(await getAll('workout_set')).toHaveLength(0)
@@ -158,7 +177,7 @@ describe('Pull', () => {
     await saveLocal('bodyweight', strip(pBw))
 
     // remote ist leer; Einheit hat ungesendete Saetze -> bleibt, Konflikt wird gemeldet
-    const r = await pullAll(remote(empty()).client)
+    const r = await pullAll(remote(empty()).client, { force: true })
 
     expect(r.errors).toEqual([])
     expect(r.removed).toBe(0)
@@ -194,7 +213,7 @@ describe('Pull', () => {
     const oldBw = bw()
     await putSynced('bodyweight', oldBw) // bodyweight-Pull laeuft vollstaendig (leer) -> darf entfernt werden
 
-    const r = await pullAll(remote(t, { failAt: { table: 'workout_set', call: 2 } }).client)
+    const r = await pullAll(remote(t, { failAt: { table: 'workout_set', call: 2 } }).client, { force: true })
 
     expect(r.completed).not.toContain('workout_set')
     expect(r.errors).toEqual(['workout_set laden: Netzwerk weg'])
@@ -280,5 +299,166 @@ describe('syncNow mit Pull', () => {
     await syncNow(client, { pull: true })
     const { getSyncStatus } = await import('./sync')
     expect(getSyncStatus().error).toContain('workout_set laden: Netzwerk weg')
+  })
+})
+
+// ---------- Anmeldung und Schutzbremse ----------
+
+/** n lokal als synchronisiert markierte Saetze (zu einer Einheit), die auch remote existieren (ausser `missing`). */
+async function seed(n: number, missing: number) {
+  const t = empty()
+  const s = session()
+  t.session.push(s)
+  await putSynced('session', s)
+  for (let i = 0; i < n; i++) {
+    const w = set(s.id, { set_no: i })
+    await putSynced('workout_set', w)
+    if (i >= missing) t.workout_set.push(w)
+  }
+  return t
+}
+
+describe('Anmeldung: kein Abgleich ohne gueltige Sitzung', () => {
+  it('abgelaufene Sitzung mit leerer Antwort (RLS) entfernt nichts und meldet die Anmeldung', async () => {
+    const s = session()
+    await putSynced('session', s)
+    for (let i = 0; i < 5; i++) await putSynced('workout_set', set(s.id, { set_no: i }))
+    // remote leer, wie bei RLS ohne gueltigen Token: Antwort ohne Fehler
+    const r = await pullAll(remote(empty(), { auth: 'expired' }).client)
+    expect(r.authExpired).toBe(true)
+    expect(r.errors).toEqual([AUTH_EXPIRED_MESSAGE])
+    expect(r.removed).toBe(0)
+    expect(await getAll('session')).toHaveLength(1)
+    expect(await getAll('workout_set')).toHaveLength(5)
+  })
+
+  it('fehlende Sitzung: ebenfalls nichts entfernt', async () => {
+    const s = session()
+    await putSynced('session', s)
+    await putSynced('workout_set', set(s.id))
+    const r = await pullAll(remote(empty(), { auth: 'none' }).client)
+    expect(r.errors).toEqual([AUTH_EXPIRED_MESSAGE])
+    expect(await getAll('workout_set')).toHaveLength(1)
+  })
+
+  it('401 / JWT-Fehler der Abfrage: nichts entfernt, Meldung "Anmeldung abgelaufen"', async () => {
+    const s = session()
+    await putSynced('session', s)
+    await putSynced('workout_set', set(s.id))
+    const c = remote(empty(), { failAt: { table: 'workout_set', call: 1 }, failError: { message: 'JWT expired', status: 401 } })
+    const r = await pullAll(c.client)
+    expect(r.errors).toEqual([AUTH_EXPIRED_MESSAGE])
+    expect(await getAll('workout_set')).toHaveLength(1)
+    expect(await getAll('session')).toHaveLength(1)
+  })
+
+  it('Sitzung laeuft waehrend des Pulls ab: nichts entfernt', async () => {
+    const s = session()
+    await putSynced('session', s)
+    await putSynced('workout_set', set(s.id))
+    const r = await pullAll(remote(empty(), { auth: 'expires-during' }).client)
+    expect(r.authExpired).toBe(true)
+    expect(await getAll('workout_set')).toHaveLength(1)
+  })
+
+  it('Hinzufuegen neuer Zeilen laeuft trotzdem weiter', async () => {
+    const t = empty()
+    const s = session()
+    t.session.push(s)
+    t.workout_set.push(set(s.id))
+    const r = await pullAll(remote(t, { auth: 'expired' }).client)
+    expect(r.errors).toEqual([AUTH_EXPIRED_MESSAGE])
+    expect(await getAll('workout_set')).toHaveLength(1) // neu uebernommen
+  })
+
+  it('abgelaufen, aber Erneuern klappt: normaler Abgleich', async () => {
+    const t = await seed(3, 1) // ein Satz fehlt remote
+    const r = await pullAll(remote(t, { auth: 'expired', refreshWorks: true }).client)
+    expect(r.errors).toEqual([])
+    expect(r.removed).toBe(1)
+  })
+})
+
+describe('Schutzbremse', () => {
+  it('Konstanten: 20 Prozent und mehr als 10 Zeilen', () => {
+    expect(BRAKE_MAX_FRACTION).toBe(0.2)
+    expect(BRAKE_MIN_ROWS).toBe(10)
+  })
+  it('reconcileBrake: Grenzfaelle', () => {
+    expect(reconcileBrake(100, 5, 95)).toBeNull()
+    expect(reconcileBrake(100, 15, 85)).toBeNull() // >10, aber nur 15 Prozent
+    expect(reconcileBrake(100, 30, 70)).toBe('mass')
+    expect(reconcileBrake(20, 10, 10)).toBeNull() // 50 Prozent, aber nicht MEHR als 10 Zeilen
+    expect(reconcileBrake(21, 11, 10)).toBe('mass')
+    expect(reconcileBrake(5, 5, 0)).toBe('zero')
+    expect(reconcileBrake(0, 0, 0)).toBeNull() // leeres Geraet, leerer Server
+  })
+
+  it('leere Antwort bei vorhandenen lokalen Zeilen loest die Bremse aus: nichts entfernt', async () => {
+    const s = session()
+    await putSynced('session', s)
+    for (let i = 0; i < 3; i++) await putSynced('workout_set', set(s.id, { set_no: i }))
+    const r = await pullAll(remote(empty()).client)
+    expect(r.authExpired).toBe(false)
+    expect(r.removed).toBe(0)
+    expect(r.held?.total).toBe(4) // 1 Einheit + 3 Saetze
+    expect(r.held?.text).toMatch(/nichts wurde gelöscht/)
+    expect(await getAll('session')).toHaveLength(1)
+    expect(await getAll('workout_set')).toHaveLength(3)
+  })
+
+  it('zu viele Loeschungen (30 von 100) loesen die Bremse aus', async () => {
+    const t = await seed(100, 30)
+    const r = await pullAll(remote(t).client)
+    expect(r.removed).toBe(0)
+    expect(r.held).not.toBeNull()
+    expect(r.held?.text).toContain('30 von 100')
+    expect(await getAll('workout_set')).toHaveLength(100)
+  })
+
+  it('normaler Abgleich mit wenigen geloeschten Zeilen laeuft ohne Rueckfrage', async () => {
+    const t = await seed(100, 5)
+    const r = await pullAll(remote(t).client)
+    expect(r.held).toBeNull()
+    expect(r.removed).toBe(5)
+    expect(await getAll('workout_set')).toHaveLength(95)
+  })
+
+  it('15 von 100 (mehr als 10, aber nur 15 Prozent) laeuft ohne Rueckfrage', async () => {
+    const t = await seed(100, 15)
+    const r = await pullAll(remote(t).client)
+    expect(r.held).toBeNull()
+    expect(r.removed).toBe(15)
+  })
+
+  it('Bestaetigung im Dialog entfernt tatsaechlich; Abbruch im Dialog entfernt nichts', async () => {
+    const t = await seed(100, 30)
+    const { client } = remote(t)
+    await syncNow(client, { pull: true })
+    expect(getSyncStatus().held?.total).toBe(30)
+    expect(await getAll('workout_set')).toHaveLength(100)
+
+    let asked = ''
+    expect(await confirmHeldReconcile(client, (m) => ((asked = m), false))).toBe(false)
+    expect(asked).toContain('30') // Rueckfrage nennt die Anzahl
+    expect(await getAll('workout_set')).toHaveLength(100)
+
+    expect(await confirmHeldReconcile(client, () => true)).toBe(true)
+    expect(await getAll('workout_set')).toHaveLength(70)
+    expect(getSyncStatus().held).toBeNull()
+  })
+
+  it('"Trotzdem abgleichen" umgeht die Anmeldepruefung nicht und entfernt nie pending', async () => {
+    const t = await seed(100, 30)
+    const pend = set((await getAll('session'))[0].id, { set_no: 500 })
+    await saveLocal('workout_set', strip(pend)) // pending
+    const expired = remote(t, { auth: 'expired' }).client
+    const r = await pullAll(expired, { force: true })
+    expect(r.errors).toEqual([AUTH_EXPIRED_MESSAGE])
+    expect(await getAll('workout_set')).toHaveLength(101)
+    await pullAll(remote(t).client, { force: true })
+    const left = await getAll('workout_set')
+    expect(left).toHaveLength(71) // 70 synchronisierte + 1 pending
+    expect(left.some((x) => x.id === pend.id)).toBe(true)
   })
 })

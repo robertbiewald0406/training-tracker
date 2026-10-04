@@ -5,6 +5,11 @@
 - Lokale Einträge erst nach Bestätigung durch Supabase löschen. Nie Daten verwerfen.
 - Lokal löschen = Tombstone (`_deleted`, bleibt pending). Der Datensatz wird erst nach bestätigtem DELETE in
   Supabase entfernt. Alle Lesezugriffe, Export und Pull (`applyRemote`) respektieren Tombstones.
+- Pull-Abgleich (lokal synchronisierte Zeilen entfernen, die remote fehlen) nur mit gültiger Sitzung (nicht
+  abgelaufen, bei Bedarf erneuert) und nur nach vollständigem Pull einer Tabelle. Schutzbremse (Konstanten in
+  src/lib/pull.ts): Entfernen von > BRAKE_MIN_ROWS Zeilen und > BRAKE_MAX_FRACTION der lokal synchronisierten,
+  oder 0 Zeilen vom Server bei vorhandenen lokalen Zeilen, hält an und braucht Bestätigung. pending und
+  Tombstones werden nie entfernt.
 - IndexedDB-Upgrades sind rein additiv (aktuell Version 2, Store `meta` nur lokal, nie synchronisiert).
 - Alle IDs sind client-seitige UUIDs (crypto.randomUUID()).
 - Neue Tabellen: RLS + Policy user_id = auth.uid() + explizites grant to authenticated, nie an anon.

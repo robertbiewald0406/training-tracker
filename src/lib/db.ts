@@ -246,6 +246,14 @@ export async function applyRemote<S extends StoreName>(
   return { applied, skipped }
 }
 
+/** Ids der lokal als synchronisiert markierten Zeilen (ohne pending und Tombstones). Basis der Schutzbremse. */
+export async function syncedLocalIds(store: StoreName): Promise<string[]> {
+  const db = await getDb()
+  return ((await db.getAll(store)) as LocalRow<StoreName>[])
+    .filter((r) => r._sync === 'synced' && !r._deleted)
+    .map((r) => r.id)
+}
+
 /**
  * Nach vollstaendigem Pull einer Tabelle: lokale Zeilen entfernen, die als synchronisiert markiert sind und
  * remote nicht mehr existieren. Niemals: pending-Eintraege und Tombstones (beide sind _sync = 'pending').

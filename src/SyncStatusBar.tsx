@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import { getSyncStatus, subscribeSyncStatus, syncNow } from './lib/sync'
+import { confirmHeldReconcile, getSyncStatus, subscribeSyncStatus, syncNow } from './lib/sync'
 import { supabase } from './lib/supabase'
 import { Button } from './ui/Button'
 import { Card } from './ui/Card'
@@ -42,6 +42,14 @@ export function SyncStatusBar() {
         <p role="alert" className="border-[3px] border-ink bg-err px-3 py-2 text-white">
           Sync-Fehler: {s.error}
         </p>
+      )}
+      {s.held && (
+        <div role="alert" className="space-y-3 border-[3px] border-ink bg-baby px-3 py-3">
+          <p>{s.held.text}</p>
+          <Button onClick={() => void confirmHeldReconcile(supabase)} disabled={s.syncing}>
+            Trotzdem abgleichen
+          </Button>
+        </div>
       )}
       <Button variant="secondary" onClick={() => void syncNow(supabase, { pull: true })} disabled={s.syncing}>
         Jetzt synchronisieren
