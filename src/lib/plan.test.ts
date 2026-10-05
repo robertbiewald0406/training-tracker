@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { plan } from './plan'
+import { weightUnit } from './logger'
 
 describe('plan.json', () => {
   const keys = new Set(Object.keys(plan.exercises))
@@ -47,5 +48,20 @@ describe('plan.json', () => {
     expect(has('adductor_machine', 'B')).toBe(false)
     expect(has('abductor_machine', 'B')).toBe(true)
     expect(has('abductor_machine', 'A')).toBe(false)
+  })
+  it('MTS Chest Press ersetzt die Brustpresse, hs_chest_press bleibt nur als Definition', () => {
+    const inDays = plan.days.flatMap((d) => d.items.map((i) => i.exercise_key))
+    expect(inDays).toContain('mts_chest_press')
+    expect(inDays).not.toContain('hs_chest_press')
+    expect(plan.exercises.hs_chest_press.retired).toBe(true)
+    expect(plan.exercises.mts_chest_press.equipment).toBe('Stack')
+    expect(plan.exercises.hs_incline_press.alternatives).toEqual(['mts_chest_press'])
+    const item = plan.days[0].items.find((i) => i.exercise_key === 'mts_chest_press')!
+    expect([item.sets, item.rep_min, item.rep_max, item.rest_sec]).toEqual([3, 8, 10, 120])
+  })
+  it('Gewichtsbeschriftung richtet sich nach equipment', () => {
+    expect(weightUnit(plan.exercises.mts_chest_press)).toBe('kg Stack')
+    expect(weightUnit(plan.exercises.hs_chest_press)).toBe('kg Platten pro Seite')
+    expect(weightUnit(plan.exercises.hs_incline_press)).toBe('kg Platten pro Seite')
   })
 })

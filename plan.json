@@ -17,7 +17,7 @@
         "triceps"
       ],
       "alternatives": [
-        "hs_chest_press"
+        "mts_chest_press"
       ],
       "cue": "Schulterblätter zusammen, Rücken fest an der Lehne, Ellbogen ca. 45 Grad zum Körper"
     },
@@ -33,7 +33,23 @@
       "alternatives": [
         "hs_incline_press"
       ],
-      "cue": "Sitzhöhe so, dass die Griffe auf Brustmitte liegen"
+      "cue": "Sitzhöhe so, dass die Griffe auf Brustmitte liegen",
+      "retired": true
+    },
+    "mts_chest_press": {
+      "name": "Hammer Strength MTS Chest Press",
+      "equipment": "Stack",
+      "attachment": "Standardgriffe",
+      "primary_muscle": "chest",
+      "secondary_muscles": [
+        "front_delts",
+        "triceps"
+      ],
+      "alternatives": [
+        "hs_incline_press",
+        "hs_chest_press"
+      ],
+      "cue": "Sitzhöhe so, dass die Griffe auf Brustmitte liegen, Schulterblätter an die Lehne, kein Hohlkreuz. Gewicht = Stackgewicht in kg"
     },
     "cable_fly_low_to_high": {
       "name": "Kabel-Fly, tief nach hoch",
@@ -448,7 +464,7 @@
           "rest_sec": 150
         },
         {
-          "exercise_key": "hs_chest_press",
+          "exercise_key": "mts_chest_press",
           "sets": 3,
           "rep_min": 8,
           "rep_max": 10,

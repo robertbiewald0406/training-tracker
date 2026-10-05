@@ -6,6 +6,7 @@ export interface Exercise {
   attachment: string
   unilateral?: boolean
   unit?: 'sec' // Zeituebung: Dauer in Sekunden wird in reps gespeichert
+  retired?: boolean // nicht mehr im Plan, Definition bleibt, damit alte Saetze lesbar sind
   bodyweight?: boolean // Gewicht = Zusatzgewicht, Vorbelegung 0
   primary_muscle: string
   secondary_muscles: string[]

@@ -8,6 +8,7 @@ import {
   pendingRightSide,
   positionDone,
   prefill,
+  weightUnit,
   isTimed,
   repsUnit,
   resolveSessionDay,
@@ -19,7 +20,7 @@ import {
   setsFor,
   type Position,
 } from '../lib/logger'
-import { plan, type Exercise } from '../lib/plan'
+import { plan } from '../lib/plan'
 import { supabase } from '../lib/supabase'
 import { lastLog } from '../lib/stats'
 import { deleteAndSync, saveAndSync } from '../lib/sync'
@@ -40,13 +41,6 @@ interface Props {
   sets: LocalRow<'workout_set'>[]
 }
 
-function weightUnit(ex: Exercise): string {
-  const t = `${ex.equipment} ${ex.attachment}`
-  if (/Kurzhantel/i.test(t)) return 'kg pro Hand'
-  if (/Plate/i.test(ex.equipment)) return 'kg Platten pro Seite'
-  if (/Stack|Kabel|Maschine/i.test(ex.equipment)) return 'kg Stack'
-  return 'kg'
-}
 const kg = (n: number) => String(n).replace('.', ',')
 const SIDE_TEXT = { left: 'links', right: 'rechts', both: '' } as const
 
@@ -156,7 +150,7 @@ export function Workout({ session, sessions, sets }: Props) {
   }
 
   const item = day.items[idx]
-  const keys = [item.exercise_key, ...plan.exercises[item.exercise_key].alternatives]
+  const keys = [item.exercise_key, ...plan.exercises[item.exercise_key].alternatives.filter((k) => !plan.exercises[k].retired)]
   const chosenKey = pos.chosen[idx] ?? item.exercise_key
   const ex = plan.exercises[chosenKey]
   const uni = Boolean(ex.unilateral)

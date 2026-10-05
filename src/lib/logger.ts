@@ -157,6 +157,15 @@ export function variantMatch(current: string | null, sessions: SessionLike[], pl
   return { current, of: (id: string) => byId.get(id) ?? null }
 }
 
+/** Beschriftung des Gewichtsfelds nach equipment: Plate-Loaded = Platten pro Seite, Stack/Kabel/Maschine = Stack. */
+export function weightUnit(ex: Exercise): string {
+  const t = `${ex.equipment} ${ex.attachment}`
+  if (/Kurzhantel/i.test(t)) return 'kg pro Hand'
+  if (/Plate/i.test(ex.equipment)) return 'kg Platten pro Seite'
+  if (/Stack|Kabel|Maschine/i.test(ex.equipment)) return 'kg Stack'
+  return 'kg'
+}
+
 /** Anzeige-Einheit einer Uebung: Zeituebungen in Sekunden, sonst Wiederholungen. */
 export const repsUnit = (ex: Exercise) => (ex.unit === 'sec' ? 's' : 'Wdh.')
 export const isTimed = (ex: Exercise) => ex.unit === 'sec'
