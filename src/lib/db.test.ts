@@ -64,3 +64,31 @@ describe('Veraltete Positionen', () => {
     expect(await listMetaKeys()).toEqual(['position:s1', 'quotes:recent'])
   })
 })
+
+describe('Uebung umschluesseln', () => {
+  const set = (id: string, key: string, extra = {}) => ({
+    id, session_id: 's1', exercise_key: key, set_no: 1, weight_kg: 40, reps: 9, rir: null, is_warmup: false,
+    side: 'both' as const, logged_at: '2026-10-05T10:05:00Z', note: null, ...extra,
+  })
+  it('stellt nur die betroffenen Saetze um, pending, Gewicht unveraendert, Tombstones unberuehrt', async () => {
+    const { rekeyExercise, setsOfExercise } = await import('./rekey')
+    const { markSynced } = await import('./db')
+    await saveLocal('workout_set', set('a', 'hs_chest_press', { weight_kg: 35, reps: 10 }))
+    await saveLocal('workout_set', set('b', 'hs_chest_press'))
+    await saveLocal('workout_set', set('c', 'hs_incline_press'))
+    await saveLocal('workout_set', set('d', 'hs_chest_press'))
+    const { deleteLocal } = await import('./db')
+    await deleteLocal('workout_set', 'd')
+    await markSynced('workout_set', [{ id: 'a', _v: 1 }, { id: 'b', _v: 1 }, { id: 'c', _v: 1 }])
+    expect((await setsOfExercise('hs_chest_press')).map((s) => s.id)).toEqual(['a', 'b'])
+
+    expect(await rekeyExercise('hs_chest_press', 'mts_chest_press')).toBe(2)
+    // getAll blendet Tombstones aus, hier direkt aus dem Store lesen.
+    const by = Object.fromEntries(((await (await getDb()).getAll('workout_set')) as { id: string }[]).map((s) => [s.id, s])) as Record<string, never>
+    expect(by.a).toMatchObject({ exercise_key: 'mts_chest_press', weight_kg: 35, reps: 10, _sync: 'pending' })
+    expect(by.b).toMatchObject({ exercise_key: 'mts_chest_press', weight_kg: 40, _sync: 'pending' })
+    expect(by.c).toMatchObject({ exercise_key: 'hs_incline_press', _sync: 'synced' })
+    expect(by.d).toMatchObject({ exercise_key: 'hs_chest_press', _deleted: true })
+    expect(await rekeyExercise('hs_chest_press', 'mts_chest_press')).toBe(0)
+  })
+})
