@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "notes": "5er Split: Mo Brust, Di Rücken, Mi Beine, Do Schultern, Fr Arme. Laufen Sa/So. Beintag wechselt: Variante A = vorne (Quadrizeps), Variante B = hinten (Beinbeuger). weight_kg = Zusatz- bzw. Maschinengewicht, Kurzhanteln pro Hand, Plate-Loaded Platten pro Seite. Zeitübungen (unit = sec) werden in reps als Sekunden geloggt.",
+  "notes": "5er Split: Mo Brust, Di Rücken, Mi Beine, Do Schultern, Fr Arme. Laufen Sa/So. Bauch und Rumpf stehen an den Beintagen (nach den Waden), am Freitag nur eine Bauchübung. Beintag A: Adduktoren, Beintag B: Abduktoren. Beintag wechselt: Variante A = vorne (Quadrizeps), Variante B = hinten (Beinbeuger). weight_kg = Zusatz- bzw. Maschinengewicht, Kurzhanteln pro Hand, Plate-Loaded Platten pro Seite. Zeitübungen (unit = sec) werden in reps als Sekunden geloggt.",
   "ramp_up": {
     "weeks": 0,
     "sets_minus": 1,
@@ -438,7 +438,7 @@
     {
       "key": "mo_brust",
       "weekday": 1,
-      "name": "Brust + Trizeps + Rumpf",
+      "name": "Brust + Trizeps",
       "items": [
         {
           "exercise_key": "hs_incline_press",
@@ -474,20 +474,6 @@
           "rep_min": 10,
           "rep_max": 15,
           "rest_sec": 75
-        },
-        {
-          "exercise_key": "cable_pallof_press",
-          "sets": 3,
-          "rep_min": 10,
-          "rep_max": 12,
-          "rest_sec": 60
-        },
-        {
-          "exercise_key": "plank",
-          "sets": 3,
-          "rep_min": 30,
-          "rep_max": 60,
-          "rest_sec": 60
         }
       ]
     },
@@ -581,14 +567,6 @@
           "variant": "A"
         },
         {
-          "exercise_key": "abductor_machine",
-          "sets": 3,
-          "rep_min": 12,
-          "rep_max": 15,
-          "rest_sec": 75,
-          "variant": "A"
-        },
-        {
           "exercise_key": "standing_calf_raise",
           "sets": 4,
           "rep_min": 10,
@@ -613,14 +591,6 @@
           "variant": "B"
         },
         {
-          "exercise_key": "adductor_machine",
-          "sets": 3,
-          "rep_min": 10,
-          "rep_max": 15,
-          "rest_sec": 75,
-          "variant": "B"
-        },
-        {
           "exercise_key": "abductor_machine",
           "sets": 3,
           "rep_min": 12,
@@ -634,6 +604,54 @@
           "rep_min": 10,
           "rep_max": 15,
           "rest_sec": 75,
+          "variant": "B"
+        },
+        {
+          "exercise_key": "cable_pallof_press",
+          "sets": 3,
+          "rep_min": 10,
+          "rep_max": 12,
+          "rest_sec": 60,
+          "variant": "A"
+        },
+        {
+          "exercise_key": "plank",
+          "sets": 3,
+          "rep_min": 30,
+          "rep_max": 60,
+          "rest_sec": 60,
+          "variant": "A"
+        },
+        {
+          "exercise_key": "hanging_knee_raise",
+          "sets": 3,
+          "rep_min": 10,
+          "rep_max": 15,
+          "rest_sec": 60,
+          "variant": "A"
+        },
+        {
+          "exercise_key": "cable_pallof_press",
+          "sets": 3,
+          "rep_min": 10,
+          "rep_max": 12,
+          "rest_sec": 60,
+          "variant": "B"
+        },
+        {
+          "exercise_key": "side_plank",
+          "sets": 3,
+          "rep_min": 20,
+          "rep_max": 40,
+          "rest_sec": 45,
+          "variant": "B"
+        },
+        {
+          "exercise_key": "hanging_knee_raise",
+          "sets": 3,
+          "rep_min": 10,
+          "rep_max": 15,
+          "rest_sec": 60,
           "variant": "B"
         }
       ]
@@ -733,13 +751,6 @@
           "rep_min": 10,
           "rep_max": 15,
           "rest_sec": 60
-        },
-        {
-          "exercise_key": "side_plank",
-          "sets": 3,
-          "rep_min": 20,
-          "rep_max": 40,
-          "rest_sec": 45
         }
       ]
     }

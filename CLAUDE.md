@@ -36,6 +36,8 @@ Hosting: GitHub Pages über GitHub Actions (Vite `base` auf den Repo-Namen).
   sonst B; auf der Startseite per Umschalter änderbar ("Nächste Woche: B (Hinten)"). Sie steckt ohne DB-Änderung im
   day_key (`mi_beine_a`, `mi_beine_b`). Zuordnung zum Plan-Tag über das Präfix (`planDayForKey`, `dayKeyMatches`,
   `resolveSessionDay` in src/lib/logger.ts). Vorbelegung und "Letztes Mal": gleiche Variante zuerst, sonst die andere.
+- Verteilung: Bauch/Rumpf (Pallof, Plank bzw. Seitstütz, Knieheben) nur an den Beintagen, nach den Waden; Freitag nur
+  eine Bauchübung, sonst keine. Adduktoren nur in Variante A (Quads), Abduktoren nur in B (Hams), Waden in beiden.
 - Zeitübungen (`unit: "sec"`: plank, side_plank): Sekunden statt Wiederholungen (5-s-Schritte, direkte Eingabe,
   Button "Stoppuhr"). Dauer steht in `reps`, weight_kg ist 0. Kein 1RM/Rekord für Zeitübungen.
 - Körpergewicht (`bodyweight`: plank, side_plank, hanging_knee_raise): Gewicht heißt "Zusatzgewicht (kg)", ohne

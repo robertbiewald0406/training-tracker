@@ -32,4 +32,20 @@ describe('plan.json', () => {
     for (const k of ['cable_lateral_raise', 'hs_iso_row', 'cable_pallof_press', 'side_plank'])
       expect(plan.exercises[k].unilateral).toBe(true)
   })
+  it('Bauch/Rumpf nur an den Beintagen (Freitag hoechstens eine Uebung)', () => {
+    const core = new Set(['plank', 'side_plank', 'cable_pallof_press', 'hanging_knee_raise'])
+    for (const d of plan.days.filter((d) => !['mi_beine', 'fr_arme'].includes(d.key)))
+      expect(d.items.filter((i) => core.has(i.exercise_key)), d.key).toEqual([])
+    const legs = plan.days.find((d) => d.key === 'mi_beine')!
+    for (const v of ['A', 'B']) expect(legs.items.filter((i) => i.variant === v && core.has(i.exercise_key)).length).toBeGreaterThan(0)
+    expect(plan.days.find((d) => d.key === 'fr_arme')!.items.filter((i) => core.has(i.exercise_key))).toHaveLength(1)
+  })
+  it('Adduktoren nur im Quad-Tag A, Abduktoren nur im Hamstring-Tag B', () => {
+    const legs = plan.days.find((d) => d.key === 'mi_beine')!
+    const has = (k: string, v: string) => legs.items.some((i) => i.exercise_key === k && i.variant === v)
+    expect(has('adductor_machine', 'A')).toBe(true)
+    expect(has('adductor_machine', 'B')).toBe(false)
+    expect(has('abductor_machine', 'B')).toBe(true)
+    expect(has('abductor_machine', 'A')).toBe(false)
+  })
 })
