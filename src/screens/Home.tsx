@@ -1,6 +1,19 @@
 import { useState } from 'react'
 import { getMeta, setMeta } from '../lib/db'
-import { isRampUp, planDayForDate, setsFor, weekOverview } from '../lib/logger'
+import {
+  dayForVariant,
+  defaultVariant,
+  isRampUp,
+  isTimed,
+  otherVariant,
+  planDayForDate,
+  repsUnit,
+  sessionDayKey,
+  setsFor,
+  variantMatch,
+  variantShort,
+  weekOverview,
+} from '../lib/logger'
 import { plan, type PlanDay } from '../lib/plan'
 import { FALLBACK_QUOTE, pickQuote, QUOTES, RECENT_KEY, type PendingQuote } from '../lib/quotes'
 import { supabase } from '../lib/supabase'
@@ -9,6 +22,7 @@ import { saveAndSync } from '../lib/sync'
 import type { LocalRow } from '../lib/types'
 import { Button } from '../ui/Button'
 import { Card } from '../ui/Card'
+import { Segmented } from '../ui/Segmented'
 import { Scene } from '../ui/Scene'
 import { Check, DAY_ICONS, Flame } from '../ui/icons'
 import { epley, fmtKg, lastLog, daysBetween } from '../lib/stats'
@@ -16,10 +30,10 @@ import { epley, fmtKg, lastLog, daysBetween } from '../lib/stats'
 const WEEKDAYS = ['', 'Mo', 'Di', 'Mi', 'Do', 'Fr']
 const WEEKDAYS_LONG = ['', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag']
 
-export async function startSession(day: PlanDay, id: string = crypto.randomUUID()) {
+export async function startSession(day: PlanDay, id: string = crypto.randomUUID(), variant: string | null = null) {
   await saveAndSync(supabase, 'session', {
     id,
-    day_key: day.key,
+    day_key: sessionDayKey(day, variant),
     started_at: new Date().toISOString(),
     ended_at: null,
     note: null,
@@ -44,12 +58,20 @@ interface HomeProps {
 }
 
 // Bester Arbeitssatz der letzten Einheit als Kurzinfo ("60 kg x 8, 4 Saetze").
-function lastSummary(key: string, sets: LocalRow<'workout_set'>[], sessions: LocalRow<'session'>[], now: Date) {
-  const log = lastLog(key, sets, sessions, null)
+function lastSummary(
+  key: string,
+  sets: LocalRow<'workout_set'>[],
+  sessions: LocalRow<'session'>[],
+  now: Date,
+  variant: ReturnType<typeof variantMatch>,
+) {
+  const log = lastLog(key, sets, sessions, null, variant)
   if (!log) return null
   const best = log.sets.reduce((a, b) => (epley(b.weight_kg, b.reps) > epley(a.weight_kg, a.reps) ? b : a))
   const d = daysBetween(log.startedAt, now)
-  return `${fmtKg(best.weight_kg)} kg × ${best.reps} · ${d <= 0 ? 'heute' : d === 1 ? 'gestern' : `vor ${d} Tagen`}`
+  const ex = plan.exercises[key]
+  const what = isTimed(ex) ? `${best.reps} s` : `${fmtKg(best.weight_kg)} kg × ${best.reps}`
+  return `${what} · ${d <= 0 ? 'heute' : d === 1 ? 'gestern' : `vor ${d} Tagen`}`
 }
 
 export function Home({ sessions, sets, onQuote }: HomeProps) {
@@ -61,6 +83,15 @@ export function Home({ sessions, sets, onQuote }: HomeProps) {
   const [picked, setPicked] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const selected = plan.days.find((d) => d.key === (picked ?? today?.key)) ?? null
+  // Beintag: Variante nach Paritaet abgeschlossener Einheiten, per Umschalter aenderbar (gilt fuer den gewaehlten Tag).
+  const [variantPick, setVariantPick] = useState<{ day: string; v: string } | null>(null)
+  const variant = selected?.rotation
+    ? variantPick?.day === selected.key
+      ? variantPick.v
+      : defaultVariant(selected, sessions)
+    : null
+  const shown = selected ? dayForVariant(selected, variant) : null
+  const match = variantMatch(variant, sessions, plan)
 
   const start = async (d: PlanDay) => {
     unlockAudio() // erster Tap der Einheit: Ton fuer das Pausenende freischalten
@@ -69,7 +100,7 @@ export function Home({ sessions, sets, onQuote }: HomeProps) {
       // Session sofort anlegen (nicht erst nach dem Zitat); das Zitat wird nur fuer diesen Start gemerkt.
       const id = crypto.randomUUID()
       onQuote({ sessionId: id, quote: await chooseQuote() })
-      await startSession(d, id)
+      await startSession(d, id, variant)
     } finally {
       setBusy(false)
     }
@@ -108,25 +139,44 @@ export function Home({ sessions, sets, onQuote }: HomeProps) {
         <div className="flex items-center gap-3">
           <Icon className="size-14 shrink-0" />
           <div className="min-w-0">
-            <h1 className="text-3xl leading-none">{selected ? selected.name : 'Lauftag'}</h1>
+            <h1 className="text-3xl leading-none">
+              {selected && variant
+                ? `${selected.name.toUpperCase()} · ${variant} (${variantShort(selected, variant)})`
+                : selected
+                  ? selected.name
+                  : 'Lauftag'}
+            </h1>
             <p className="mt-1 text-base">
-              {selected ? `${selected.items.length} Übungen` : 'Heute wird gelaufen. Zum Trainieren oben einen Tag wählen.'}
+              {shown ? `${shown.items.length} Übungen` : 'Heute wird gelaufen. Zum Trainieren oben einen Tag wählen.'}
             </p>
           </div>
         </div>
-        {selected && (
+        {selected && variant && (
+          <div className="space-y-1">
+            <Segmented
+              label="Variante"
+              options={selected.rotation!.variants.map((v) => ({ value: v, text: `${v} ${variantShort(selected, v)}` }))}
+              value={variant}
+              onChange={(v) => setVariantPick({ day: selected.key, v })}
+            />
+            <p className="text-base">
+              Nächste Woche: {otherVariant(selected, variant)} ({variantShort(selected, otherVariant(selected, variant))})
+            </p>
+          </div>
+        )}
+        {selected && shown && (
           <>
             <Button variant="primary" disabled={busy} onClick={() => void start(selected)}>
               Einheit starten
             </Button>
             <ul className="space-y-2 border-t-[3px] border-ink pt-3">
-              {selected.items.map((it) => {
-                const info = lastSummary(it.exercise_key, sets, sessions, now)
+              {shown.items.map((it) => {
+                const info = lastSummary(it.exercise_key, sets, sessions, now, match)
                 return (
                   <li key={it.exercise_key} className="leading-tight">
                     {plan.exercises[it.exercise_key].name}
                     <span className="num block text-base">
-                      {setsFor(it, rampUp, plan)} × {it.rep_min}–{it.rep_max} Wdh.
+                      {setsFor(it, rampUp, plan)} × {it.rep_min}–{it.rep_max} {repsUnit(plan.exercises[it.exercise_key])}
                     </span>
                     <span className="num block text-base">{info ? `Zuletzt ${info}` : 'Noch kein Vergleich'}</span>
                   </li>

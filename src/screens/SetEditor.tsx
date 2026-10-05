@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { formatNumber, parseNumber } from '../lib/logger'
 import { Button } from '../ui/Button'
 import { Card } from '../ui/Card'
@@ -17,7 +17,9 @@ export interface SetValues {
 
 interface Props {
   title: string
-  initial: { weight_kg: number; reps: number } | null
+  initial: { weight_kg: number; reps: number | null } | null
+  timed?: boolean // Zeituebung: Sekunden statt Wiederholungen, mit Stoppuhr
+  bodyweight?: boolean // Gewicht = Zusatzgewicht
   initialFlags?: { warmup: boolean; failure: boolean }
   stepKg: number
   onStepKg: (n: number) => void
@@ -28,6 +30,31 @@ interface Props {
   busy: boolean
   onSave: (v: SetValues) => void
   onCancel?: () => void
+}
+
+function compareDuration(now: number, before: number): Trend {
+  return now > before ? 'better' : now < before ? 'worse' : 'same'
+}
+
+/** Stoppuhr auf Zeitstempel-Basis (laeuft korrekt weiter, wenn die App kurz im Hintergrund war). */
+function useStopwatch(onStop: (sec: number) => void) {
+  const [startedAt, setStartedAt] = useState<number | null>(null)
+  const [, tick] = useState(0)
+  useEffect(() => {
+    if (startedAt === null) return
+    const t = setInterval(() => tick((n) => n + 1), 250)
+    return () => clearInterval(t)
+  }, [startedAt])
+  const elapsed = startedAt === null ? 0 : Math.floor((Date.now() - startedAt) / 1000)
+  return {
+    running: startedAt !== null,
+    elapsed,
+    start: () => setStartedAt(Date.now()),
+    stop: () => {
+      if (startedAt !== null) onStop(Math.max(1, Math.round((Date.now() - startedAt) / 1000)))
+      setStartedAt(null)
+    },
+  }
 }
 
 const TREND_TEXT: Record<Trend, string> = {
@@ -45,7 +72,9 @@ const STEPS = [
 // Gewicht und Wiederholungen: per +/- oder direkt eintippen. Der Parent setzt per `key` zurueck.
 export function SetEditor(p: Props) {
   const [weight, setWeight] = useState(p.initial ? formatNumber(p.initial.weight_kg) : '')
-  const [reps, setReps] = useState(p.initial ? String(p.initial.reps) : '')
+  const [reps, setReps] = useState(p.initial?.reps != null ? String(p.initial.reps) : '')
+  const watch = useStopwatch((sec) => setReps(String(sec)))
+  const timed = Boolean(p.timed)
   const [warmup, setWarmup] = useState(p.initialFlags?.warmup ?? false)
   const [failure, setFailure] = useState(p.initialFlags?.failure ?? false)
 
@@ -55,14 +84,15 @@ export function SetEditor(p: Props) {
 
   const bumpWeight = (dir: 1 | -1) =>
     setWeight(formatNumber(Math.max(0, Math.round(((w ?? 0) + dir * p.stepKg) * 100) / 100)))
-  const bumpReps = (dir: 1 | -1) => setReps(String(Math.max(1, Math.round(r ?? 0) + dir)))
+  const repStep = timed ? 5 : 1
+  const bumpReps = (dir: 1 | -1) => setReps(String(Math.max(1, Math.round(r ?? 0) + dir * repStep)))
 
   return (
     <Card className="space-y-4">
       <h2 className="text-2xl">{p.title}</h2>
       <Stepper
-        label="Gewicht"
-        unit={p.weightUnit}
+        label={p.bodyweight ? 'Zusatzgewicht (kg)' : 'Gewicht'}
+        unit={p.bodyweight ? 'Zusatzgewicht (kg)' : p.weightUnit}
         inputMode="decimal"
         value={weight}
         onValue={setWeight}
@@ -76,18 +106,26 @@ export function SetEditor(p: Props) {
         </div>
       </div>
       <Stepper
-        label="Wiederholungen"
-        unit="Wiederholungen"
+        label={timed ? 'Sekunden' : 'Wiederholungen'}
+        unit={timed ? 'Sekunden' : 'Wiederholungen'}
         inputMode="numeric"
         value={reps}
         onValue={setReps}
         onMinus={() => bumpReps(-1)}
         onPlus={() => bumpReps(1)}
       />
+      {timed && (
+        <div className="space-y-1">
+          <Button onClick={watch.running ? watch.stop : watch.start}>
+            {watch.running ? `Stopp · ${watch.elapsed} s` : 'Stoppuhr'}
+          </Button>
+          {watch.running && <p className="text-center text-base">Läuft. Mit Stopp wird die Zeit übernommen.</p>}
+        </div>
+      )}
       {p.reference && w !== null && r !== null && r >= 1 && (
         <p className="num flex flex-wrap items-center justify-center gap-x-2 border-[3px] border-ink bg-baby px-3 py-2 text-base">
           {(() => {
-            const t = compareSets({ weight: w, reps: r }, p.reference)
+            const t = timed ? compareDuration(r, p.reference.reps) : compareSets({ weight: w, reps: r }, p.reference)
             return (
               <span className="inline-flex items-center gap-1 font-bold">
                 {t === 'better' && <ArrowUp className="size-4" />}
@@ -97,7 +135,7 @@ export function SetEditor(p: Props) {
             )
           })()}
           <span>
-            ({p.reference.label}: {fmtKg(p.reference.weight_kg)} kg × {p.reference.reps})
+            ({p.reference.label}: {timed ? `${p.reference.reps} s` : `${fmtKg(p.reference.weight_kg)} kg × ${p.reference.reps}`})
           </span>
         </p>
       )}
@@ -105,7 +143,7 @@ export function SetEditor(p: Props) {
         <Toggle label="Aufwärmsatz" checked={warmup} onChange={setWarmup} />
         <Toggle label="Bis Versagen" checked={failure} onChange={setFailure} icon={<Flame className="size-5 shrink-0" />} />
       </div>
-      {p.rampUp && <p className="text-base">Wiedereinstieg: Nicht bis Versagen empfohlen.</p>}
+      {p.rampUp && !timed && <p className="text-base">Wiedereinstieg: Nicht bis Versagen empfohlen.</p>}
       {/* Klebt am unteren Rand (ueber der Tab-Leiste), damit Speichern bei langen Karten immer erreichbar bleibt. */}
       <div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-10 -mx-1 bg-card px-1 pt-1">
         <Button variant="primary" disabled={!valid || p.busy} onClick={() => valid && p.onSave({ weight: w, reps: r, warmup, failure })}>

@@ -1,3 +1,4 @@
+import { plan } from '../lib/plan'
 import { daysBetween, fmtKg, type SessionLog } from '../lib/stats'
 import { Card } from '../ui/Card'
 
@@ -36,7 +37,12 @@ export function LastTime({ log, current, now = new Date() }: { log: SessionLog |
             className={`num border-[3px] border-ink px-2 py-1 text-base leading-tight ${i === current ? 'bg-neon' : 'bg-card'}`}
           >
             <span className="mr-1 text-sm font-semibold">{i + 1}.</span>
-            {g.map((s) => `${SIDE[s.side]}${SIDE[s.side] ? ' ' : ''}${fmtKg(s.weight_kg)} × ${s.reps}`).join(' · ')}
+            {g
+              .map((s) => {
+                const v = plan.exercises[s.exercise_key]?.unit === 'sec' ? `${s.reps} s` : `${fmtKg(s.weight_kg)} × ${s.reps}`
+                return `${SIDE[s.side]}${SIDE[s.side] ? ' ' : ''}${v}`
+              })
+              .join(' · ')}
           </li>
         ))}
       </ul>

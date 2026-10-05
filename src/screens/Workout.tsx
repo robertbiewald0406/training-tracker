@@ -8,6 +8,12 @@ import {
   pendingRightSide,
   positionDone,
   prefill,
+  isTimed,
+  repsUnit,
+  resolveSessionDay,
+  startValues,
+  variantMatch,
+  variantOfKey,
   resolvePosition,
   setsByPosition,
   setsFor,
@@ -45,7 +51,9 @@ const kg = (n: number) => String(n).replace('.', ',')
 const SIDE_TEXT = { left: 'links', right: 'rechts', both: '' } as const
 
 export function Workout({ session, sessions, sets }: Props) {
-  const day = plan.days.find((d) => d.key === session.day_key)!
+  const day = resolveSessionDay(session.day_key, plan)!
+  const variant = variantOfKey(session.day_key, plan)
+  const match = variantMatch(variant, sessions, plan)
   const rampUp = useMemo(() => isRampUp(new Date(), sessions, plan), [sessions])
   const [pos, setPos] = useState<Position | null>(null)
   const [stepKg, setStepKg] = useState(2.5)
@@ -103,7 +111,9 @@ export function Workout({ session, sessions, sets }: Props) {
     <div className="space-y-2">
       <div className="flex items-center gap-2">
         {Icon && <Icon className="size-6 shrink-0" />}
-        <h1 className="min-w-0 flex-1 truncate text-lg leading-none">{day.name}</h1>
+        <h1 className="min-w-0 flex-1 truncate text-lg leading-none">{day.name}
+          {variant ? ` · ${variant}` : ''}
+        </h1>
         <p className="num shrink-0 text-base">{finished ? 'Fertig' : `Übung ${idx + 1} von ${n}`}</p>
       </div>
       <ol className="flex gap-2" aria-label="Übungen">
@@ -159,13 +169,13 @@ export function Workout({ session, sessions, sets }: Props) {
   const lastSet = [...sessionSets].sort((a, b) => a.logged_at.localeCompare(b.logged_at)).at(-1)
   const editSet = editing ? sessionSets.find((s) => s.id === editing) : undefined
 
-  let initial: { weight_kg: number; reps: number } | null
+  let initial: { weight_kg: number; reps: number | null } | null
   if (editSet) initial = { weight_kg: editSet.weight_kg, reps: editSet.reps }
   else if (right) initial = { weight_kg: right.weight_kg, reps: right.reps } // links -> rechts uebernehmen
-  else initial = prefill(chosenKey, uni ? 'left' : 'both', sets, sessions, session.id)
+  else initial = startValues(ex, item, prefill(chosenKey, uni ? 'left' : 'both', sets, sessions, session.id, match))
 
   // Vergleich mit dem letzten Mal: derselbe Satz (gleiche Reihenfolge, gleiche Seite), sonst der letzte Satz.
-  const prev = lastLog(chosenKey, sets, sessions, session.id)
+  const prev = lastLog(chosenKey, sets, sessions, session.id, match)
   const prevNos = [...new Set(prev?.sets.map((s) => s.set_no))]
   const refNo = prevNos[Math.min(done, prevNos.length - 1)]
   const refSet = prev ? (prev.sets.find((s) => s.set_no === refNo && s.side === side) ?? prev.sets.find((s) => s.set_no === refNo)) : undefined
@@ -241,7 +251,7 @@ export function Workout({ session, sessions, sets }: Props) {
         <div className="flex items-center justify-between gap-3">
           <p className="num text-3xl leading-none">
             {item.rep_min}–{item.rep_max}
-            <span className="ml-1 text-base font-semibold">Wdh.</span>
+            <span className="ml-1 text-base font-semibold">{repsUnit(ex)}</span>
           </p>
           <SetProgress done={done} total={total} />
         </div>
@@ -329,6 +339,8 @@ export function Workout({ session, sessions, sets }: Props) {
           onStepKg={setStepKg}
           rampUp={rampUp}
           weightUnit={weightUnit(plan.exercises[editSet.exercise_key])}
+          timed={isTimed(plan.exercises[editSet.exercise_key])}
+          bodyweight={Boolean(plan.exercises[editSet.exercise_key].bodyweight)}
           saveLabel="Änderung speichern"
           busy={busy}
           onSave={(v) => void saveEdit(v)}
@@ -344,6 +356,8 @@ export function Workout({ session, sessions, sets }: Props) {
           onStepKg={setStepKg}
           rampUp={rampUp}
           weightUnit={weightUnit(ex)}
+          timed={isTimed(ex)}
+          bodyweight={Boolean(ex.bodyweight)}
           saveLabel={uni ? `${side === 'left' ? 'Links' : 'Rechts'} speichern` : 'Satz speichern'}
           busy={busy}
           onSave={(v) => void saveSet(v)}
@@ -353,7 +367,10 @@ export function Workout({ session, sessions, sets }: Props) {
       {lastSet && !editSet && (
         <Card className="space-y-2 py-3">
           <p className="num text-lg">
-            Letzter Satz: {kg(lastSet.weight_kg)} kg × {lastSet.reps}
+            Letzter Satz:{' '}
+            {isTimed(plan.exercises[lastSet.exercise_key])
+              ? `${lastSet.reps} s`
+              : `${kg(lastSet.weight_kg)} kg × ${lastSet.reps}`}
             <span className="ml-2 font-sans text-base font-semibold">
               {plan.exercises[lastSet.exercise_key].name}
               {lastSet.side !== 'both' ? `, ${SIDE_TEXT[lastSet.side]}` : ''}
