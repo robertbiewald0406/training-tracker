@@ -30,6 +30,17 @@ Hosting: GitHub Pages über GitHub Actions (Vite `base` auf den Repo-Namen).
 - plan.json im Repo ist die einzige Quelle für Übungen und Tagesplan. Nicht in die DB.
 - workout_set.exercise_key verweist auf einen Key in plan.json. Keys nie umbenennen.
 - Ist eine Übung belegt, wird unter dem tatsächlich genutzten Key (alternatives) gespeichert.
+- Tage: mo_brust, di_ruecken, mi_beine, do_schultern, fr_arme (weekday 1 bis 5).
+- Varianten (nur mi_beine, `rotation` mit Labels "Vorne (Quads)" / "Hinten (Hams)"): Items mit `variant` erscheinen nur
+  in dieser Variante, Items ohne immer. Variante = A, wenn die Zahl abgeschlossener Einheiten des Tages gerade ist,
+  sonst B; auf der Startseite per Umschalter änderbar ("Nächste Woche: B (Hinten)"). Sie steckt ohne DB-Änderung im
+  day_key (`mi_beine_a`, `mi_beine_b`). Zuordnung zum Plan-Tag über das Präfix (`planDayForKey`, `dayKeyMatches`,
+  `resolveSessionDay` in src/lib/logger.ts). Vorbelegung und "Letztes Mal": gleiche Variante zuerst, sonst die andere.
+- Zeitübungen (`unit: "sec"`: plank, side_plank): Sekunden statt Wiederholungen (5-s-Schritte, direkte Eingabe,
+  Button "Stoppuhr"). Dauer steht in `reps`, weight_kg ist 0. Kein 1RM/Rekord für Zeitübungen.
+- Körpergewicht (`bodyweight`: plank, side_plank, hanging_knee_raise): Gewicht heißt "Zusatzgewicht (kg)", ohne
+  Verlauf mit 0 vorbelegt.
+- Einseitig (`unilateral`): cable_lateral_raise, hs_iso_row, cable_pallof_press, side_plank (je Seite ein Satz).
 - Wiedereinstieg: ramp_up in plan.json. `weeks` > 0: so viele Wochen ab der ersten Session ein Satz weniger
   je Übung (mind. `min_sets`), dazu der Hinweis "Nicht bis Versagen empfohlen". `weeks` = 0: aus, immer die
   volle Satzzahl, der Hinweis erscheint nirgends. Aktuell 0.

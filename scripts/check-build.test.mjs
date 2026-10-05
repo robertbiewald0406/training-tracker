@@ -21,6 +21,6 @@ describe('Build-Prüfung', () => {
     expect(scanText('note: "TESTDATEN"')).toHaveLength(1)
   })
   it('Publishable Key ist erlaubt', () => {
-    expect(scanText('sb_publishable_wbA_d2WvbS8NuivGs-D_OA_1cBPn2Hj')).toEqual([])
+    expect(scanText('sb_publishable_DUMMYDUMMYDUMMYDUMMYDUMMY')).toEqual([])
   })
 })
