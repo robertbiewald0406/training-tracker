@@ -1,4 +1,4 @@
-import type { Plan, PlanDay, PlanItem } from './plan'
+import type { Exercise, Plan, PlanDay, PlanItem } from './plan'
 import type { Side, WorkoutSetRow } from './types'
 
 interface SessionLike {
@@ -15,9 +15,8 @@ export const POSITION_PREFIX = 'position:'
 
 /** Offene Einheit (ended_at = null, Tag aus dem Plan); bei mehreren die neueste. Keine offene Einheit = Startseite. */
 export function activeSession<T extends SessionLike>(sessions: T[], plan: Plan): T | undefined {
-  const keys = new Set(plan.days.map((d) => d.key))
   return sessions
-    .filter((s) => s.ended_at === null && keys.has(s.day_key))
+    .filter((s) => s.ended_at === null && planDayForKey(s.day_key, plan))
     .sort((a, b) => b.started_at.localeCompare(a.started_at))[0]
 }
 
@@ -25,6 +24,56 @@ export function activeSession<T extends SessionLike>(sessions: T[], plan: Plan):
 export function stalePositionKeys(metaKeys: string[], sessions: SessionLike[]): string[] {
   const open = new Set(sessions.filter((s) => s.ended_at === null).map((s) => s.id))
   return metaKeys.filter((k) => k.startsWith(POSITION_PREFIX) && !open.has(k.slice(POSITION_PREFIX.length)))
+}
+
+/** day_key einer Einheit gehoert zum Plan-Tag: exakt oder (Tage mit Rotation) Praefix "<key>_<variante>". */
+export function dayKeyMatches(dayKey: string, day: PlanDay): boolean {
+  if (dayKey === day.key) return true
+  return Boolean(day.rotation) && day.rotation!.variants.some((v) => dayKey === `${day.key}_${v.toLowerCase()}`)
+}
+
+export function planDayForKey(dayKey: string, plan: Plan): PlanDay | undefined {
+  return plan.days.find((d) => dayKeyMatches(dayKey, d))
+}
+
+/** day_key, unter dem eine Einheit gespeichert wird (mit Variante: "mi_beine_a"). */
+export function sessionDayKey(day: PlanDay, variant: string | null): string {
+  return day.rotation && variant ? `${day.key}_${variant.toLowerCase()}` : day.key
+}
+
+/** Variante einer gespeicherten Einheit ("mi_beine_b" -> "B"); null ohne Rotation oder Variante. */
+export function variantOfKey(dayKey: string, plan: Plan): string | null {
+  const day = planDayForKey(dayKey, plan)
+  if (!day?.rotation || dayKey === day.key) return null
+  return day.rotation.variants.find((v) => dayKey === `${day.key}_${v.toLowerCase()}`) ?? null
+}
+
+/** Variante nach Paritaet: gerade Zahl abgeschlossener Einheiten dieses Tages = erste (A), ungerade = zweite (B). */
+export function defaultVariant(day: PlanDay, sessions: SessionLike[]): string | null {
+  if (!day.rotation) return null
+  const done = sessions.filter((s) => s.ended_at !== null && dayKeyMatches(s.day_key, day)).length
+  const vs = day.rotation.variants
+  return vs[done % vs.length]
+}
+
+export function otherVariant(day: PlanDay, variant: string): string {
+  const vs = day.rotation!.variants
+  return vs[(vs.indexOf(variant) + 1) % vs.length]
+}
+
+/** Kurzes Etikett ohne Klammerzusatz ("Vorne (Quads)" -> "Vorne"). */
+export const variantShort = (day: PlanDay, v: string) => (day.rotation?.labels[v] ?? v).replace(/\s*\(.*\)\s*$/, '')
+
+/** Tag mit nur den Uebungen der Variante (Items ohne variant immer). Positionen beziehen sich auf diese Liste. */
+export function dayForVariant(day: PlanDay, variant: string | null): PlanDay {
+  if (!day.rotation) return day
+  return { ...day, items: day.items.filter((i) => !i.variant || i.variant === variant) }
+}
+
+/** Plan-Tag zu einer gespeicherten Einheit (mit Variante gefiltert). */
+export function resolveSessionDay(dayKey: string, plan: Plan): PlanDay | undefined {
+  const day = planDayForKey(dayKey, plan)
+  return day && dayForVariant(day, variantOfKey(dayKey, plan))
 }
 
 /** Plan-Tag nach Wochentag des Geraets (1 = Montag ... 5 = Freitag). Samstag/Sonntag: null (Lauftag). */
@@ -49,7 +98,7 @@ export function weekOverview(plan: Plan, sessions: SessionLike[], now: Date) {
     day,
     done: sessions.some((s) => {
       const t = new Date(s.started_at).getTime()
-      return s.day_key === day.key && s.ended_at !== null && t >= start && t < end
+      return dayKeyMatches(s.day_key, day) && s.ended_at !== null && t >= start && t < end
     }),
   }))
 }
@@ -57,8 +106,7 @@ export function weekOverview(plan: Plan, sessions: SessionLike[], now: Date) {
 /** Ramp-up: aktiv ohne Plan-Einheit oder innerhalb von weeks*7 Tagen ab der ersten Plan-Einheit. weeks = 0: aus. */
 export function isRampUp(now: Date, sessions: SessionLike[], plan: Plan): boolean {
   if (!(plan.ramp_up.weeks > 0)) return false
-  const keys = new Set(plan.days.map((d) => d.key))
-  const times = sessions.filter((s) => keys.has(s.day_key)).map((s) => new Date(s.started_at).getTime())
+  const times = sessions.filter((s) => planDayForKey(s.day_key, plan)).map((s) => new Date(s.started_at).getTime())
   if (!times.length) return true
   return now.getTime() < Math.min(...times) + plan.ramp_up.weeks * 7 * DAY_MS
 }
@@ -81,6 +129,7 @@ export function prefill(
   sets: SetLike[],
   sessions: SessionLike[],
   currentSessionId: string | null,
+  variant: { current: string | null; of: (sessionId: string) => string | null } | null = null,
 ): { weight_kg: number; reps: number } | null {
   const mine = sets.filter((s) => s.exercise_key === exerciseKey && s.side === side && !s.is_warmup)
   const pick = (list: SetLike[]) => (list.length ? [...list].sort(byTime).at(-1)! : null)
@@ -89,12 +138,41 @@ export function prefill(
   if (cur) return { weight_kg: cur.weight_kg, reps: cur.reps }
 
   const startedAt = new Map(sessions.map((s) => [s.id, s.started_at]))
-  const earlier = mine.filter((s) => s.session_id !== currentSessionId && startedAt.has(s.session_id))
+  let earlier = mine.filter((s) => s.session_id !== currentSessionId && startedAt.has(s.session_id))
+  // Zuerst die gleiche Variante, sonst die andere.
+  if (variant?.current) {
+    const same = earlier.filter((s) => variant.of(s.session_id) === variant.current)
+    if (same.length) earlier = same
+  }
   const lastSession = [...new Set(earlier.map((s) => s.session_id))].sort((a, b) =>
     startedAt.get(a)!.localeCompare(startedAt.get(b)!),
   ).at(-1)
   const prev = lastSession ? pick(earlier.filter((s) => s.session_id === lastSession)) : null
   return prev ? { weight_kg: prev.weight_kg, reps: prev.reps } : null
+}
+
+/** Variantenabgleich fuer Vorbelegung und "Letztes Mal": aktuelle Variante plus Zuordnung Einheit -> Variante. */
+export function variantMatch(current: string | null, sessions: SessionLike[], plan: Plan) {
+  const byId = new Map(sessions.map((s) => [s.id, variantOfKey(s.day_key, plan)]))
+  return { current, of: (id: string) => byId.get(id) ?? null }
+}
+
+/** Anzeige-Einheit einer Uebung: Zeituebungen in Sekunden, sonst Wiederholungen. */
+export const repsUnit = (ex: Exercise) => (ex.unit === 'sec' ? 's' : 'Wdh.')
+export const isTimed = (ex: Exercise) => ex.unit === 'sec'
+
+/**
+ * Startwerte des Satz-Editors: letzter Satz (prefill), sonst bei Koerpergewicht/Zeit Zusatzgewicht 0
+ * (Zeituebung: Dauer = untere Grenze), sonst leer.
+ */
+export function startValues(
+  ex: Exercise,
+  item: PlanItem,
+  prefilled: { weight_kg: number; reps: number } | null,
+): { weight_kg: number; reps: number | null } | null {
+  if (prefilled) return prefilled
+  if (ex.bodyweight || isTimed(ex)) return { weight_kg: 0, reps: isTimed(ex) ? item.rep_min : null }
+  return null
 }
 
 /** Naechste set_no fuer eine Uebung in der Einheit (Aufwaermsaetze zaehlen mit, links/rechts teilen sich eine). */

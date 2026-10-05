@@ -5,6 +5,8 @@ export interface Exercise {
   equipment: string
   attachment: string
   unilateral?: boolean
+  unit?: 'sec' // Zeituebung: Dauer in Sekunden wird in reps gespeichert
+  bodyweight?: boolean // Gewicht = Zusatzgewicht, Vorbelegung 0
   primary_muscle: string
   secondary_muscles: string[]
   alternatives: string[]
@@ -16,11 +18,13 @@ export interface PlanItem {
   rep_min: number
   rep_max: number
   rest_sec: number
+  variant?: string // nur in dieser Variante des Tages (ohne variant: immer)
 }
 export interface PlanDay {
   key: string
   weekday: number // 1 = Montag ... 5 = Freitag
   name: string
+  rotation?: { variants: string[]; labels: Record<string, string>; rule?: string }
   items: PlanItem[]
 }
 export interface Plan {

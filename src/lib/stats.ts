@@ -130,12 +130,15 @@ export function lastLog(
   sets: WorkoutSetRow[],
   sessions: SessionLike[],
   currentSessionId: string | null,
+  variant: { current: string | null; of: (sessionId: string) => string | null } | null = null,
 ): SessionLog | null {
   const cur = currentSessionId ? sessions.find((s) => s.id === currentSessionId)?.started_at : undefined
   const logs = exerciseLogs(exerciseKey, sets, sessions).filter(
     (l) => l.sessionId !== currentSessionId && (cur === undefined || l.startedAt < cur),
   )
-  return logs.at(-1) ?? null
+  // Bei Tagen mit Variante zuerst die gleiche Variante, sonst die andere.
+  const same = variant?.current ? logs.filter((l) => variant.of(l.sessionId) === variant.current) : []
+  return (same.length ? same : logs).at(-1) ?? null
 }
 
 /** Ganze Tage zwischen zwei Zeitpunkten nach Kalendertag (nicht nach 24-h-Fenstern). */
@@ -190,7 +193,7 @@ export function personalRecords(sets: WorkoutSetRow[], sessions: SessionLike[], 
   const at = startOf(sessions)
   const best = new Map<string, PersonalRecord>()
   for (const s of [...sets].sort((a, b) => a.logged_at.localeCompare(b.logged_at))) {
-    if (!work(s) || !plan.exercises[s.exercise_key] || !at.has(s.session_id)) continue
+    if (!work(s) || !plan.exercises[s.exercise_key] || plan.exercises[s.exercise_key].unit === 'sec' || !at.has(s.session_id)) continue
     const e = epley(s.weight_kg, s.reps)
     const cur = best.get(s.exercise_key)
     if (e > 0 && (!cur || e > cur.e1rm + 1e-9))

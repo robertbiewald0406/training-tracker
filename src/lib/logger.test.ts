@@ -4,7 +4,14 @@ import {
   activeSession,
   stalePositionKeys,
   buildSetRow,
+  dayForVariant,
+  defaultVariant,
   derivePosition,
+  resolveSessionDay,
+  sessionDayKey,
+  startValues,
+  variantMatch,
+  variantOfKey,
   setsByPosition,
   isRampUp,
   nextSetNo,
@@ -177,7 +184,12 @@ describe('Wiederaufnahme', () => {
     const sets = [mk({ exercise_key: 'hs_high_row', set_no: 1 })]
     expect(derivePosition(back, sets, 's1', false, plan).chosen[3]).toBe('hs_high_row')
     const all = day.items.flatMap((it, idx) =>
-      Array.from({ length: it.sets }, (_, i) => mk({ exercise_key: it.exercise_key, set_no: i + 1, logged_at: `2026-10-05T1${idx}:0${i}:00Z` })),
+      Array.from({ length: it.sets }, (_, i) =>
+        // einseitige Uebungen zaehlen erst mit links und rechts
+        (plan.exercises[it.exercise_key].unilateral ? (['left', 'right'] as const) : (['both'] as const)).map((side) =>
+          mk({ exercise_key: it.exercise_key, set_no: i + 1, side, logged_at: `2026-10-05T1${idx}:0${i}:00Z` }),
+        ),
+      ).flat(),
     )
     expect(derivePosition(day, all, 's1', false, plan).itemIdx).toBe(day.items.length)
   })
@@ -187,10 +199,10 @@ describe('Wiederaufnahme', () => {
     const a = [1, 2, 3, 4].map((i) => mk({ id: `a${i}`, exercise_key: 'hs_chest_press', set_no: i, logged_at: `2026-10-05T10:0${i}:00Z` }))
     const assign = Object.fromEntries(a.map((x) => [x.id, 0]))
     const per = setsByPosition(day, plan, a, 's1', assign)
-    expect(per.map((l) => l.length)).toEqual([4, 0, 0, 0])
+    expect(per.map((l) => l.length)).toEqual([4, ...day.items.slice(1).map(() => 0)])
     expect(derivePosition(day, a, 's1', false, plan, assign).itemIdx).toBe(1)
     // ohne Zuordnung (Heuristik) zaehlen sie fuer Position 1 (Hauptschluessel)
-    expect(setsByPosition(day, plan, a, 's1').map((l) => l.length)).toEqual([0, 4, 0, 0])
+    expect(setsByPosition(day, plan, a, 's1').map((l) => l.length)).toEqual([0, 4, ...day.items.slice(2).map(() => 0)])
   })
   it('gespeicherte Position hat Vorrang, ungueltige faellt auf abgeleitete zurueck', () => {
     const derived = { itemIdx: 1, chosen: {}, assign: {} }
@@ -228,5 +240,90 @@ describe('Gemerkte Position ohne Session', () => {
     expect(activeSession([], plan)).toBeUndefined()
     expect(activeSession([sess('x', 'test', '2026-10-05T10:00:00Z')], plan)).toBeUndefined()
     expect(activeSession([open1, sess('s2', 'di_ruecken', '2026-10-06T10:00:00Z')], plan)?.id).toBe('s2')
+  })
+})
+
+describe('Varianten (Beintag)', () => {
+  const legs = plan.days.find((d) => d.key === 'mi_beine')!
+  const done = (id: string, key: string) => sess(id, key, new Date(2026, 9, 7).toISOString(), new Date(2026, 9, 7, 1).toISOString())
+
+  it('Variante wechselt nach Paritaet abgeschlossener Einheiten', () => {
+    expect(defaultVariant(legs, [])).toBe('A')
+    expect(defaultVariant(legs, [done('a', 'mi_beine_a')])).toBe('B')
+    expect(defaultVariant(legs, [done('a', 'mi_beine_a'), done('b', 'mi_beine_b')])).toBe('A')
+    // offene Einheit und andere Tage zaehlen nicht
+    const open = sess('c', 'mi_beine_a', new Date(2026, 9, 14).toISOString(), null)
+    expect(defaultVariant(legs, [done('a', 'mi_beine_a'), open, done('m', 'mo_brust')])).toBe('B')
+    expect(defaultVariant(plan.days[0], [])).toBeNull()
+  })
+  it('day_key traegt die Variante, Items filtern sich nach Variante', () => {
+    expect(sessionDayKey(legs, 'A')).toBe('mi_beine_a')
+    expect(sessionDayKey(legs, 'B')).toBe('mi_beine_b')
+    expect(sessionDayKey(plan.days[0], 'A')).toBe('mo_brust')
+    const a = dayForVariant(legs, 'A').items.map((i) => i.exercise_key)
+    const b = dayForVariant(legs, 'B').items.map((i) => i.exercise_key)
+    expect(a).toContain('hack_squat')
+    expect(a).not.toContain('seated_leg_curl')
+    expect(b).toContain('seated_leg_curl')
+    expect(b).not.toContain('hack_squat')
+    expect(plan.days[0]).toBe(dayForVariant(plan.days[0], null))
+    expect(resolveSessionDay('mi_beine_b', plan)!.items.map((i) => i.exercise_key)).toEqual(b)
+    expect(variantOfKey('mi_beine_b', plan)).toBe('B')
+    expect(variantOfKey('mo_brust', plan)).toBeNull()
+  })
+  it('Wochenuebersicht und aktive Einheit ordnen ueber das Praefix zu', () => {
+    const now = new Date(2026, 9, 8)
+    const s = [sess('a', 'mi_beine_b', new Date(2026, 9, 7, 10).toISOString(), new Date(2026, 9, 7, 11).toISOString())]
+    expect(weekOverview(plan, s, now).find((w) => w.day.key === 'mi_beine')!.done).toBe(true)
+    const open = sess('o', 'mi_beine_a', new Date(2026, 9, 7, 10).toISOString(), null)
+    expect(activeSession([open], plan)?.id).toBe('o')
+    expect(activeSession([sess('x', 'mi_beine_x', '2026-10-07T10:00:00Z')], plan)).toBeUndefined()
+  })
+  it('Vorbelegung: gleiche Variante zuerst, sonst die andere', () => {
+    const sessions = [
+      sess('s1', 'mi_beine_a', '2026-09-23T10:00:00Z', '2026-09-23T11:00:00Z'),
+      sess('s2', 'mi_beine_b', '2026-09-30T10:00:00Z', '2026-09-30T11:00:00Z'),
+      sess('cur', 'mi_beine_a', '2026-10-07T10:00:00Z'),
+    ]
+    const sets = [
+      mk({ session_id: 's1', exercise_key: 'adductor_machine', weight_kg: 50, reps: 12 }),
+      mk({ session_id: 's2', exercise_key: 'adductor_machine', weight_kg: 60, reps: 10 }),
+    ]
+    const m = variantMatch('A', sessions, plan)
+    expect(prefill('adductor_machine', 'both', sets, sessions, 'cur', m)).toEqual({ weight_kg: 50, reps: 12 })
+    expect(prefill('adductor_machine', 'both', sets, sessions, 'cur', variantMatch('B', sessions, plan))).toEqual({
+      weight_kg: 60,
+      reps: 10,
+    })
+    // Keine Daten in der Variante: die andere
+    expect(prefill('adductor_machine', 'both', [sets[1]], sessions, 'cur', m)).toEqual({ weight_kg: 60, reps: 10 })
+  })
+})
+
+describe('Zeit- und Koerpergewichtsuebungen', () => {
+  const item = { exercise_key: 'plank', sets: 3, rep_min: 30, rep_max: 60, rest_sec: 60 }
+  it('Zeituebung: Dauer in reps, Gewicht 0, Vorbelegung = untere Grenze', () => {
+    expect(startValues(plan.exercises.plank, item, null)).toEqual({ weight_kg: 0, reps: 30 })
+    const row = buildSetRow({
+      sessionId: 's', exerciseKey: 'plank', setNo: 1, weight_kg: 0, reps: 45, warmup: false, failure: false, side: 'both',
+    })
+    expect(row.reps).toBe(45)
+    expect(row.weight_kg).toBe(0)
+  })
+  it('Koerpergewicht: Gewicht mit 0 vorbelegt, ohne Zeit leere Wiederholungen', () => {
+    const hk = { ...item, exercise_key: 'hanging_knee_raise', rep_min: 10 }
+    expect(startValues(plan.exercises.hanging_knee_raise, hk, null)).toEqual({ weight_kg: 0, reps: null })
+  })
+  it('letzter Satz hat Vorrang vor der Vorbelegung 0', () => {
+    expect(startValues(plan.exercises.hanging_knee_raise, item, { weight_kg: 5, reps: 12 })).toEqual({ weight_kg: 5, reps: 12 })
+  })
+  it('normale Uebung ohne Verlauf: keine Vorbelegung', () => {
+    expect(startValues(plan.exercises.hs_incline_press, item, null)).toBeNull()
+  })
+  it('einseitige Zeituebung (Seitstuetz) zaehlt erst mit links und rechts', () => {
+    const l = mk({ exercise_key: 'side_plank', side: 'left', weight_kg: 0, reps: 30 })
+    const r = mk({ exercise_key: 'side_plank', side: 'right', weight_kg: 0, reps: 30 })
+    expect(workingSetCount([l], true)).toBe(0)
+    expect(workingSetCount([l, r], true)).toBe(1)
   })
 })

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "notes": "5er Split, je Muskel 1x pro Woche. Laufen Sa/So, optional Mo kurz und locker. Gewicht in weight_kg = Zusatzgewicht bzw. Stack-/Plattengewicht der Maschine, bei Kurzhanteln pro Hand.",
+  "notes": "5er Split: Mo Brust, Di Rücken, Mi Beine, Do Schultern, Fr Arme. Laufen Sa/So. Beintag wechselt: Variante A = vorne (Quadrizeps), Variante B = hinten (Beinbeuger). weight_kg = Zusatz- bzw. Maschinengewicht, Kurzhanteln pro Hand, Plate-Loaded Platten pro Seite. Zeitübungen (unit = sec) werden in reps als Sekunden geloggt.",
   "ramp_up": {
     "weeks": 0,
     "sets_minus": 1,
@@ -178,7 +178,10 @@
       "attachment": "Keine",
       "primary_muscle": "calves",
       "secondary_muscles": [],
-      "alternatives": [],
+      "alternatives": [
+        "seated_calf_raise",
+        "hs_calf_machine"
+      ],
       "cue": "Unten volle Dehnung, oben kurz halten"
     },
     "lf_shoulder_press": {
@@ -197,13 +200,13 @@
       "name": "Kabel-Seitheben",
       "equipment": "Kabelzug",
       "attachment": "Einhand-Griff",
-      "unilateral": true,
       "primary_muscle": "side_delts",
       "secondary_muscles": [],
       "alternatives": [
         "lateral_raise_machine"
       ],
-      "cue": "Kabel ganz unten und vor dem Körper, bis Schulterhöhe heben, je Seite loggen"
+      "cue": "Kabel ganz unten und vor dem Körper, bis Schulterhöhe heben, je Seite loggen",
+      "unilateral": true
     },
     "lateral_raise_machine": {
       "name": "Seitheben Maschine",
@@ -300,7 +303,6 @@
       "name": "Iso Row (Hammer Strength, Iso-Lateral)",
       "equipment": "Plate-Loaded",
       "attachment": "Neutraler Griff, einarmig nacheinander oder beidseitig",
-      "unilateral": true,
       "primary_muscle": "back_mid",
       "secondary_muscles": [
         "lats",
@@ -311,14 +313,132 @@
         "hs_low_row",
         "y_row"
       ],
-      "cue": "Brust fest am Polster, Ellbogen eng am Körper nach hinten, oben kurz halten. Gewicht = Platten pro Seite, je Seite loggen. Nur mit Brustpolster ausführen"
+      "cue": "Brust fest am Polster, Ellbogen eng am Körper nach hinten, oben kurz halten. Gewicht = Platten pro Seite, je Seite loggen. Nur mit Brustpolster ausführen",
+      "unilateral": true
+    },
+    "adductor_machine": {
+      "name": "Adduktoren-Maschine",
+      "equipment": "Maschine",
+      "attachment": "Beinpolster innen",
+      "primary_muscle": "adductors",
+      "secondary_muscles": [],
+      "alternatives": [],
+      "cue": "Sitz so einstellen, dass die Beine bequem offen starten, kontrolliert zusammenführen, unten kurz halten, Lehne fest"
+    },
+    "abductor_machine": {
+      "name": "Abduktoren-Maschine",
+      "equipment": "Maschine",
+      "attachment": "Beinpolster außen",
+      "primary_muscle": "abductors",
+      "secondary_muscles": [
+        "glutes"
+      ],
+      "alternatives": [],
+      "cue": "Rücken fest an der Lehne, kontrolliert nach außen drücken, nicht mit Schwung"
+    },
+    "seated_calf_raise": {
+      "name": "Wadenheben sitzend",
+      "equipment": "Maschine",
+      "attachment": "Kniepolster",
+      "primary_muscle": "calves",
+      "secondary_muscles": [],
+      "alternatives": [
+        "hs_calf_machine",
+        "standing_calf_raise"
+      ],
+      "cue": "Unten volle Dehnung, oben kurz halten. Falls nicht vorhanden: stehendes Wadenheben"
+    },
+    "pushdown_vgrip": {
+      "name": "Pushdown mit V-Griff",
+      "equipment": "Kabelzug",
+      "attachment": "V-Griff",
+      "primary_muscle": "triceps",
+      "secondary_muscles": [],
+      "alternatives": [
+        "pushdown_straight_bar"
+      ],
+      "cue": "Ellbogen am Körper, unten voll strecken, nicht mit dem Oberkörper mitdrücken"
+    },
+    "cable_curl_bar": {
+      "name": "Kabelcurl mit gerader Stange",
+      "equipment": "Kabelzug",
+      "attachment": "Gerade Stange",
+      "primary_muscle": "biceps",
+      "secondary_muscles": [],
+      "alternatives": [
+        "cable_hammer_curl_rope"
+      ],
+      "cue": "Kabel ganz unten, Ellbogen vorn am Körper fixiert, oben kurz anspannen"
+    },
+    "cable_pallof_press": {
+      "name": "Pallof Press",
+      "equipment": "Kabelzug",
+      "attachment": "D-Griff",
+      "primary_muscle": "core",
+      "secondary_muscles": [
+        "obliques"
+      ],
+      "alternatives": [],
+      "cue": "Kabel auf Brusthöhe seitlich, Griff vor die Brust, dann gerade nach vorn drücken und halten, Rumpf lässt sich nicht drehen. Je Seite loggen",
+      "unilateral": true
+    },
+    "plank": {
+      "name": "Plank (Unterarmstütz)",
+      "equipment": "Boden",
+      "attachment": "Keine",
+      "primary_muscle": "core",
+      "secondary_muscles": [
+        "abs"
+      ],
+      "alternatives": [],
+      "cue": "Ellbogen unter den Schultern, Körper eine Linie, Bauch und Gesäß fest, kein Hohlkreuz. Zeit in Sekunden loggen",
+      "unit": "sec",
+      "bodyweight": true
+    },
+    "side_plank": {
+      "name": "Seitstütz",
+      "equipment": "Boden",
+      "attachment": "Keine",
+      "primary_muscle": "obliques",
+      "secondary_muscles": [
+        "core"
+      ],
+      "alternatives": [],
+      "cue": "Ellbogen unter der Schulter, Hüfte oben, Körper eine Linie. Je Seite loggen, Zeit in Sekunden",
+      "unit": "sec",
+      "bodyweight": true,
+      "unilateral": true
+    },
+    "hanging_knee_raise": {
+      "name": "Knieheben im Hang",
+      "equipment": "Beinheber-Station / Klimmzugstange",
+      "attachment": "Unterarmstütz oder Griffe",
+      "primary_muscle": "abs",
+      "secondary_muscles": [
+        "core"
+      ],
+      "alternatives": [],
+      "cue": "Becken leicht nach hinten kippen, Knie kontrolliert zur Brust, nicht schwingen. Bei Ausstrahlung ins Bein oder Rückenschmerz streichen. Zusatzgewicht in kg, sonst 0",
+      "bodyweight": true
+    },
+    "hs_calf_machine": {
+      "name": "Hammer Strength Wadenmaschine (sitzend)",
+      "equipment": "Plate-Loaded oder Stack",
+      "attachment": "Bügel nach vorn wegdrücken",
+      "primary_muscle": "calves",
+      "secondary_muscles": [],
+      "alternatives": [
+        "seated_calf_raise",
+        "standing_calf_raise"
+      ],
+      "cue": "Unten volle Dehnung, oben kurz halten, Bügel kontrolliert wegdrücken"
     }
   },
   "days": [
     {
       "key": "mo_brust",
       "weekday": 1,
-      "name": "Brust",
+      "name": "Brust + Trizeps + Rumpf",
       "items": [
         {
           "exercise_key": "hs_incline_press",
@@ -336,24 +456,45 @@
         },
         {
           "exercise_key": "cable_fly_low_to_high",
-          "sets": 4,
+          "sets": 3,
           "rep_min": 10,
           "rep_max": 15,
           "rest_sec": 90
         },
         {
           "exercise_key": "fly_machine",
-          "sets": 3,
+          "sets": 2,
           "rep_min": 12,
           "rep_max": 15,
           "rest_sec": 90
+        },
+        {
+          "exercise_key": "pushdown_vgrip",
+          "sets": 3,
+          "rep_min": 10,
+          "rep_max": 15,
+          "rest_sec": 75
+        },
+        {
+          "exercise_key": "cable_pallof_press",
+          "sets": 3,
+          "rep_min": 10,
+          "rep_max": 12,
+          "rest_sec": 60
+        },
+        {
+          "exercise_key": "plank",
+          "sets": 3,
+          "rep_min": 30,
+          "rep_max": 60,
+          "rest_sec": 60
         }
       ]
     },
     {
       "key": "di_ruecken",
       "weekday": 2,
-      "name": "Rücken + hintere Schulter",
+      "name": "Rücken + hintere Schulter + Bizeps",
       "items": [
         {
           "exercise_key": "hs_low_row",
@@ -378,17 +519,24 @@
         },
         {
           "exercise_key": "lat_pulldown_wide",
-          "sets": 4,
+          "sets": 3,
           "rep_min": 8,
           "rep_max": 12,
           "rest_sec": 120
         },
         {
           "exercise_key": "reverse_fly_machine",
-          "sets": 4,
+          "sets": 3,
           "rep_min": 12,
           "rep_max": 15,
           "rest_sec": 90
+        },
+        {
+          "exercise_key": "cable_curl_bar",
+          "sets": 3,
+          "rep_min": 10,
+          "rep_max": 12,
+          "rest_sec": 75
         }
       ]
     },
@@ -396,41 +544,97 @@
       "key": "mi_beine",
       "weekday": 3,
       "name": "Beine",
+      "rotation": {
+        "variants": [
+          "A",
+          "B"
+        ],
+        "labels": {
+          "A": "Vorne (Quads)",
+          "B": "Hinten (Hams)"
+        },
+        "rule": "Variante = Anzahl abgeschlossener Einheiten dieses Tages gerade: A, ungerade: B. Manuell umschaltbar."
+      },
       "items": [
         {
           "exercise_key": "hack_squat",
           "sets": 4,
           "rep_min": 6,
           "rep_max": 10,
-          "rest_sec": 150
+          "rest_sec": 150,
+          "variant": "A"
         },
         {
           "exercise_key": "leg_extension",
+          "sets": 4,
+          "rep_min": 10,
+          "rep_max": 15,
+          "rest_sec": 90,
+          "variant": "A"
+        },
+        {
+          "exercise_key": "adductor_machine",
           "sets": 3,
           "rep_min": 10,
           "rep_max": 15,
-          "rest_sec": 90
+          "rest_sec": 75,
+          "variant": "A"
         },
         {
-          "exercise_key": "lying_leg_curl",
+          "exercise_key": "abductor_machine",
           "sets": 3,
-          "rep_min": 10,
-          "rep_max": 12,
-          "rest_sec": 90
-        },
-        {
-          "exercise_key": "seated_leg_curl",
-          "sets": 3,
-          "rep_min": 10,
-          "rep_max": 12,
-          "rest_sec": 90
+          "rep_min": 12,
+          "rep_max": 15,
+          "rest_sec": 75,
+          "variant": "A"
         },
         {
           "exercise_key": "standing_calf_raise",
           "sets": 4,
           "rep_min": 10,
           "rep_max": 15,
-          "rest_sec": 90
+          "rest_sec": 90,
+          "variant": "A"
+        },
+        {
+          "exercise_key": "seated_leg_curl",
+          "sets": 4,
+          "rep_min": 8,
+          "rep_max": 12,
+          "rest_sec": 90,
+          "variant": "B"
+        },
+        {
+          "exercise_key": "lying_leg_curl",
+          "sets": 4,
+          "rep_min": 10,
+          "rep_max": 15,
+          "rest_sec": 90,
+          "variant": "B"
+        },
+        {
+          "exercise_key": "adductor_machine",
+          "sets": 3,
+          "rep_min": 10,
+          "rep_max": 15,
+          "rest_sec": 75,
+          "variant": "B"
+        },
+        {
+          "exercise_key": "abductor_machine",
+          "sets": 3,
+          "rep_min": 12,
+          "rep_max": 15,
+          "rest_sec": 75,
+          "variant": "B"
+        },
+        {
+          "exercise_key": "seated_calf_raise",
+          "sets": 4,
+          "rep_min": 10,
+          "rep_max": 15,
+          "rest_sec": 75,
+          "variant": "B"
         }
       ]
     },
@@ -451,35 +655,35 @@
           "sets": 4,
           "rep_min": 10,
           "rep_max": 15,
-          "rest_sec": 90
+          "rest_sec": 75
         },
         {
           "exercise_key": "lateral_raise_machine",
           "sets": 4,
           "rep_min": 12,
           "rep_max": 15,
-          "rest_sec": 90
+          "rest_sec": 75
         },
         {
           "exercise_key": "face_pull_rope",
           "sets": 3,
           "rep_min": 12,
           "rep_max": 15,
-          "rest_sec": 90
+          "rest_sec": 75
         },
         {
           "exercise_key": "prone_incline_shrug",
           "sets": 3,
           "rep_min": 10,
           "rep_max": 15,
-          "rest_sec": 90
+          "rest_sec": 75
         }
       ]
     },
     {
       "key": "fr_arme",
       "weekday": 5,
-      "name": "Arme",
+      "name": "Arme + Bauch",
       "items": [
         {
           "exercise_key": "incline_db_curl",
@@ -497,14 +701,14 @@
         },
         {
           "exercise_key": "cable_hammer_curl_rope",
-          "sets": 3,
+          "sets": 2,
           "rep_min": 10,
           "rep_max": 15,
-          "rest_sec": 90
+          "rest_sec": 75
         },
         {
           "exercise_key": "cable_overhead_tricep_rope",
-          "sets": 4,
+          "sets": 3,
           "rep_min": 10,
           "rep_max": 15,
           "rest_sec": 90
@@ -514,14 +718,28 @@
           "sets": 3,
           "rep_min": 10,
           "rep_max": 12,
-          "rest_sec": 90
+          "rest_sec": 75
         },
         {
           "exercise_key": "dips_machine",
           "sets": 3,
           "rep_min": 8,
           "rep_max": 12,
-          "rest_sec": 120
+          "rest_sec": 100
+        },
+        {
+          "exercise_key": "hanging_knee_raise",
+          "sets": 3,
+          "rep_min": 10,
+          "rep_max": 15,
+          "rest_sec": 60
+        },
+        {
+          "exercise_key": "side_plank",
+          "sets": 3,
+          "rep_min": 20,
+          "rep_max": 40,
+          "rest_sec": 45
         }
       ]
     }
