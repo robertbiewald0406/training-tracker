@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "notes": "5er Split: Mo Brust, Di Rücken, Mi Beine, Do Schultern, Fr Arme. Laufen Sa/So. Bauch steht am Montag (Beinheben im Stütz, Dead Bug) und am Freitag (Beinheben im Stütz), nicht an den Beintagen. Beintag A: Adduktoren, Beintag B: Abduktoren. Beintag wechselt: Variante A = vorne (Quadrizeps), Variante B = hinten (Beinbeuger). weight_kg = Zusatz- bzw. Maschinengewicht, Kurzhanteln pro Hand, Plate-Loaded Platten pro Seite. Zeitübungen (unit = sec) werden in reps als Sekunden geloggt.",
+  "notes": "5er Split: Mo Brust, Di Rücken, Mi Beine, Do Schultern, Fr Arme. Laufen Sa/So. Beintag wechselt: Variante A = vorne (Quadrizeps), Variante B = hinten (Beinbeuger). weight_kg = Zusatz- bzw. Maschinengewicht, Kurzhanteln pro Hand, Plate-Loaded Platten pro Seite. Zeitübungen (unit = sec) werden in reps als Sekunden geloggt.",
   "ramp_up": {
     "weeks": 0,
     "sets_minus": 1,
@@ -31,24 +31,11 @@
         "triceps"
       ],
       "alternatives": [
+        "mts_chest_press",
         "hs_incline_press"
       ],
       "cue": "Sitzhöhe so, dass die Griffe auf Brustmitte liegen",
       "retired": true
-    },
-    "mts_chest_press": {
-      "name": "Hammer Strength MTS Chest Press",
-      "equipment": "Stack",
-      "attachment": "Standardgriffe",
-      "primary_muscle": "chest",
-      "secondary_muscles": [
-        "front_delts",
-        "triceps"
-      ],
-      "alternatives": [
-        "hs_incline_press"
-      ],
-      "cue": "Sitzhöhe so, dass die Griffe auf Brustmitte liegen, Schulterblätter an die Lehne, kein Hohlkreuz. Gewicht = Stackgewicht in kg"
     },
     "cable_fly_low_to_high": {
       "name": "Kabel-Fly, tief nach hoch",
@@ -452,24 +439,94 @@
       ],
       "cue": "Unten volle Dehnung, oben kurz halten, Bügel kontrolliert wegdrücken"
     },
-    "captain_chair_leg_raise": {
-      "name": "Beinheben im Stütz (Knie gebeugt)",
-      "equipment": "Beinheber-Station (Captain's Chair)",
-      "attachment": "Unterarmstütz",
+    "mts_chest_press": {
+      "name": "Hammer Strength MTS Chest Press",
+      "equipment": "Stack",
+      "attachment": "Standardgriffe",
+      "primary_muscle": "chest",
+      "secondary_muscles": [
+        "front_delts",
+        "triceps"
+      ],
+      "alternatives": [
+        "hs_incline_press"
+      ],
+      "cue": "Sitzhöhe so, dass die Griffe auf Brustmitte liegen, Schulterblätter an die Lehne, kein Hohlkreuz. Gewicht = Stackgewicht in kg"
+    },
+    "hanging_leg_raise": {
+      "name": "Beinheben hängend",
+      "equipment": "Klimmzugstange",
+      "attachment": "Obergriff",
       "primary_muscle": "abs",
       "secondary_muscles": [
-        "core"
+        "hip_flexors"
+      ],
+      "alternatives": [
+        "captain_chair_leg_raise"
+      ],
+      "cue": "Becken leicht nach hinten kippen, Beine kontrolliert heben, nicht schwingen, langsam absenken. Zusatzgewicht in kg, sonst 0. Bei Ausstrahlung ins Bein oder Rückenschmerz streichen",
+      "bodyweight": true,
+      "retired": true
+    },
+    "captain_chair_leg_raise": {
+      "name": "Beinheben im Stütz (Knie gebeugt)",
+      "equipment": "Beinheber-Station / Barren",
+      "attachment": "Unterarmstütz, Rücken am Polster",
+      "primary_muscle": "abs",
+      "secondary_muscles": [
+        "hip_flexors"
       ],
       "alternatives": [
         "dead_bug"
       ],
-      "cue": "Rücken an die Lehne, Becken leicht nach hinten kippen, Knie kontrolliert zur Brust heben und langsam senken, nicht schwingen. Zusatzgewicht in kg, sonst 0",
-      "warning": "Bei Ausstrahlung ins Bein oder Rückenschmerz sofort abbrechen und die Übung streichen.",
-      "bodyweight": true
+      "bodyweight": true,
+      "cue": "Unterarme aufgestützt, Rücken fest am Polster. Knie zur Brust ziehen, Becken dabei nur leicht nach hinten kippen, langsam absenken. Zusatzgewicht in kg, sonst 0",
+      "warning": "Bandscheibe: Rücken fest am Polster bzw. Boden. Knie immer gebeugt, nie gestreckte Beine. Kein Hohlkreuz, Bewegungsumfang klein, langsam und ohne Schwung, nicht pressen. Bei Schmerz, Ausstrahlung ins Bein, Kribbeln oder Taubheit sofort abbrechen und abklären lassen."
+    },
+    "hs_ab_machine": {
+      "name": "Hammer Strength MTS Bauchmaschine",
+      "equipment": "Stack",
+      "attachment": "Standardgriffe",
+      "primary_muscle": "abs",
+      "secondary_muscles": [],
+      "alternatives": [
+        "lying_reverse_crunch"
+      ],
+      "cue": "Rücken fest an der Lehne, Bewegung aus dem Bauch, kleiner Bewegungsumfang, kein Schwung. Gewicht = Stackgewicht in kg",
+      "retired": true
+    },
+    "neg_situp": {
+      "name": "Negative Sit-Ups",
+      "equipment": "Schrägbank oder Boden",
+      "attachment": "Keine",
+      "primary_muscle": "abs",
+      "secondary_muscles": [
+        "hip_flexors"
+      ],
+      "alternatives": [
+        "lying_reverse_crunch",
+        "hs_ab_machine"
+      ],
+      "cue": "Mit Hilfe der Hände hochkommen, dann 3 bis 4 Sekunden kontrolliert ablassen, Füße fixiert, Bewegungsumfang klein halten. Bei Rückenschmerz oder Ausstrahlung streichen",
+      "bodyweight": true,
+      "retired": true
+    },
+    "lying_reverse_crunch": {
+      "name": "Reverse Crunch liegend",
+      "equipment": "Boden oder Matte",
+      "attachment": "Keine",
+      "primary_muscle": "abs",
+      "secondary_muscles": [],
+      "alternatives": [
+        "neg_situp"
+      ],
+      "cue": "Auf dem Rücken, Beine angewinkelt, Becken kontrolliert vom Boden heben, nicht schwingen, langsam absenken. Zusatzgewicht in kg, sonst 0",
+      "bodyweight": true,
+      "retired": true
     },
     "dead_bug": {
       "name": "Dead Bug (liegend)",
-      "equipment": "Boden",
+      "equipment": "Boden oder Matte",
       "attachment": "Keine",
       "primary_muscle": "abs",
       "secondary_muscles": [
@@ -478,16 +535,16 @@
       "alternatives": [
         "captain_chair_leg_raise"
       ],
-      "cue": "Auf dem Rücken, Arme zur Decke, Knie über der Hüfte. Unteren Rücken am Boden halten, gegenüberliegenden Arm und Bein langsam strecken, zurück, Seite wechseln. Zusatzgewicht in kg, sonst 0",
-      "warning": "Wölbt sich der untere Rücken vom Boden, Bewegungsumfang verkleinern. Bei Rückenschmerz abbrechen.",
-      "bodyweight": true
+      "bodyweight": true,
+      "cue": "Rücken liegend, Arme senkrecht nach oben, Knie in 90 Grad über der Hüfte. Gegenüberliegenden Arm und Bein langsam absenken, unterer Rücken bleibt am Boden. Wiederholungen = je Seite eine, abwechselnd",
+      "warning": "Bandscheibe: Rücken fest am Polster bzw. Boden. Knie immer gebeugt, nie gestreckte Beine. Kein Hohlkreuz, Bewegungsumfang klein, langsam und ohne Schwung, nicht pressen. Bei Schmerz, Ausstrahlung ins Bein, Kribbeln oder Taubheit sofort abbrechen und abklären lassen."
     }
   },
   "days": [
     {
       "key": "mo_brust",
       "weekday": 1,
-      "name": "Brust + Trizeps",
+      "name": "Brust + Trizeps + Bauch",
       "items": [
         {
           "exercise_key": "hs_incline_press",
@@ -630,6 +687,14 @@
           "variant": "A"
         },
         {
+          "exercise_key": "abductor_machine",
+          "sets": 3,
+          "rep_min": 12,
+          "rep_max": 15,
+          "rest_sec": 75,
+          "variant": "A"
+        },
+        {
           "exercise_key": "standing_calf_raise",
           "sets": 4,
           "rep_min": 10,
@@ -651,6 +716,14 @@
           "rep_min": 10,
           "rep_max": 15,
           "rest_sec": 90,
+          "variant": "B"
+        },
+        {
+          "exercise_key": "adductor_machine",
+          "sets": 3,
+          "rep_min": 10,
+          "rep_max": 15,
+          "rest_sec": 75,
           "variant": "B"
         },
         {

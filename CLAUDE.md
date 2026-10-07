@@ -37,8 +37,8 @@ Hosting: GitHub Pages über GitHub Actions (Vite `base` auf den Repo-Namen).
   day_key (`mi_beine_a`, `mi_beine_b`). Zuordnung zum Plan-Tag über das Präfix (`planDayForKey`, `dayKeyMatches`,
   `resolveSessionDay` in src/lib/logger.ts). Vorbelegung und "Letztes Mal": gleiche Variante zuerst, sonst die andere.
 - Verteilung: Bauch nur Montag (captain_chair_leg_raise 3 x 10-15, dead_bug 3 x 8-12, je 60 s Pause) und Freitag
-  (captain_chair_leg_raise 3 x 10-15), jeweils am Ende. Beintage ohne Bauch. Adduktoren nur in Variante A (Quads),
-  Abduktoren nur in B (Hams), Waden in beiden.
+  (captain_chair_leg_raise 3 x 10-15), jeweils am Ende. Beintage ohne Bauch. Adduktoren, Abduktoren und Waden in
+  beiden Varianten.
 - Stillgelegt (`retired`: true, Definition bleibt, damit alte Sätze lesbar sind): hs_chest_press, plank, side_plank,
   cable_pallof_press, hanging_knee_raise. Eine retired-Übung steht nie in einem Tag oder in alternatives einer
   aktiven Übung (Test in plan.test.tsx). Schlüssel nie umbenennen oder löschen.

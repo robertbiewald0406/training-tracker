@@ -57,13 +57,10 @@ describe('plan.json', () => {
     expect(plan.exercises.captain_chair_leg_raise.alternatives).toEqual(['dead_bug'])
     expect(plan.exercises.dead_bug.alternatives).toEqual(['captain_chair_leg_raise'])
   })
-  it('Adduktoren nur im Quad-Tag A, Abduktoren nur im Hamstring-Tag B', () => {
+  it('Adduktoren und Abduktoren stehen in beiden Beinvarianten', () => {
     const legs = plan.days.find((d) => d.key === 'mi_beine')!
-    const has = (k: string, v: string) => legs.items.some((i) => i.exercise_key === k && i.variant === v)
-    expect(has('adductor_machine', 'A')).toBe(true)
-    expect(has('adductor_machine', 'B')).toBe(false)
-    expect(has('abductor_machine', 'B')).toBe(true)
-    expect(has('abductor_machine', 'A')).toBe(false)
+    for (const k of ['adductor_machine', 'abductor_machine'])
+      for (const v of ['A', 'B']) expect(legs.items.some((i) => i.exercise_key === k && i.variant === v), `${k} ${v}`).toBe(true)
   })
   it('MTS Chest Press ersetzt die Brustpresse, hs_chest_press bleibt nur als Definition', () => {
     const inDays = plan.days.flatMap((d) => d.items.map((i) => i.exercise_key))
