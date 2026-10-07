@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "notes": "5er Split: Mo Brust, Di Rücken, Mi Beine, Do Schultern, Fr Arme. Laufen Sa/So. Bauch und Rumpf stehen an den Beintagen (nach den Waden), am Freitag nur eine Bauchübung. Beintag A: Adduktoren, Beintag B: Abduktoren. Beintag wechselt: Variante A = vorne (Quadrizeps), Variante B = hinten (Beinbeuger). weight_kg = Zusatz- bzw. Maschinengewicht, Kurzhanteln pro Hand, Plate-Loaded Platten pro Seite. Zeitübungen (unit = sec) werden in reps als Sekunden geloggt.",
+  "notes": "5er Split: Mo Brust, Di Rücken, Mi Beine, Do Schultern, Fr Arme. Laufen Sa/So. Bauch steht am Montag (Beinheben im Stütz, Dead Bug) und am Freitag (Beinheben im Stütz), nicht an den Beintagen. Beintag A: Adduktoren, Beintag B: Abduktoren. Beintag wechselt: Variante A = vorne (Quadrizeps), Variante B = hinten (Beinbeuger). weight_kg = Zusatz- bzw. Maschinengewicht, Kurzhanteln pro Hand, Plate-Loaded Platten pro Seite. Zeitübungen (unit = sec) werden in reps als Sekunden geloggt.",
   "ramp_up": {
     "weeks": 0,
     "sets_minus": 1,
@@ -46,8 +46,7 @@
         "triceps"
       ],
       "alternatives": [
-        "hs_incline_press",
-        "hs_chest_press"
+        "hs_incline_press"
       ],
       "cue": "Sitzhöhe so, dass die Griffe auf Brustmitte liegen, Schulterblätter an die Lehne, kein Hohlkreuz. Gewicht = Stackgewicht in kg"
     },
@@ -396,7 +395,8 @@
       ],
       "alternatives": [],
       "cue": "Kabel auf Brusthöhe seitlich, Griff vor die Brust, dann gerade nach vorn drücken und halten, Rumpf lässt sich nicht drehen. Je Seite loggen",
-      "unilateral": true
+      "unilateral": true,
+      "retired": true
     },
     "plank": {
       "name": "Plank (Unterarmstütz)",
@@ -409,7 +409,8 @@
       "alternatives": [],
       "cue": "Ellbogen unter den Schultern, Körper eine Linie, Bauch und Gesäß fest, kein Hohlkreuz. Zeit in Sekunden loggen",
       "unit": "sec",
-      "bodyweight": true
+      "bodyweight": true,
+      "retired": true
     },
     "side_plank": {
       "name": "Seitstütz",
@@ -423,7 +424,8 @@
       "cue": "Ellbogen unter der Schulter, Hüfte oben, Körper eine Linie. Je Seite loggen, Zeit in Sekunden",
       "unit": "sec",
       "bodyweight": true,
-      "unilateral": true
+      "unilateral": true,
+      "retired": true
     },
     "hanging_knee_raise": {
       "name": "Knieheben im Hang",
@@ -435,7 +437,8 @@
       ],
       "alternatives": [],
       "cue": "Becken leicht nach hinten kippen, Knie kontrolliert zur Brust, nicht schwingen. Bei Ausstrahlung ins Bein oder Rückenschmerz streichen. Zusatzgewicht in kg, sonst 0",
-      "bodyweight": true
+      "bodyweight": true,
+      "retired": true
     },
     "hs_calf_machine": {
       "name": "Hammer Strength Wadenmaschine (sitzend)",
@@ -448,6 +451,36 @@
         "standing_calf_raise"
       ],
       "cue": "Unten volle Dehnung, oben kurz halten, Bügel kontrolliert wegdrücken"
+    },
+    "captain_chair_leg_raise": {
+      "name": "Beinheben im Stütz (Knie gebeugt)",
+      "equipment": "Beinheber-Station (Captain's Chair)",
+      "attachment": "Unterarmstütz",
+      "primary_muscle": "abs",
+      "secondary_muscles": [
+        "core"
+      ],
+      "alternatives": [
+        "dead_bug"
+      ],
+      "cue": "Rücken an die Lehne, Becken leicht nach hinten kippen, Knie kontrolliert zur Brust heben und langsam senken, nicht schwingen. Zusatzgewicht in kg, sonst 0",
+      "warning": "Bei Ausstrahlung ins Bein oder Rückenschmerz sofort abbrechen und die Übung streichen.",
+      "bodyweight": true
+    },
+    "dead_bug": {
+      "name": "Dead Bug (liegend)",
+      "equipment": "Boden",
+      "attachment": "Keine",
+      "primary_muscle": "abs",
+      "secondary_muscles": [
+        "core"
+      ],
+      "alternatives": [
+        "captain_chair_leg_raise"
+      ],
+      "cue": "Auf dem Rücken, Arme zur Decke, Knie über der Hüfte. Unteren Rücken am Boden halten, gegenüberliegenden Arm und Bein langsam strecken, zurück, Seite wechseln. Zusatzgewicht in kg, sonst 0",
+      "warning": "Wölbt sich der untere Rücken vom Boden, Bewegungsumfang verkleinern. Bei Rückenschmerz abbrechen.",
+      "bodyweight": true
     }
   },
   "days": [
@@ -490,6 +523,20 @@
           "rep_min": 10,
           "rep_max": 15,
           "rest_sec": 75
+        },
+        {
+          "exercise_key": "captain_chair_leg_raise",
+          "sets": 3,
+          "rep_min": 10,
+          "rep_max": 15,
+          "rest_sec": 60
+        },
+        {
+          "exercise_key": "dead_bug",
+          "sets": 3,
+          "rep_min": 8,
+          "rep_max": 12,
+          "rest_sec": 60
         }
       ]
     },
@@ -621,54 +668,6 @@
           "rep_max": 15,
           "rest_sec": 75,
           "variant": "B"
-        },
-        {
-          "exercise_key": "cable_pallof_press",
-          "sets": 3,
-          "rep_min": 10,
-          "rep_max": 12,
-          "rest_sec": 60,
-          "variant": "A"
-        },
-        {
-          "exercise_key": "plank",
-          "sets": 3,
-          "rep_min": 30,
-          "rep_max": 60,
-          "rest_sec": 60,
-          "variant": "A"
-        },
-        {
-          "exercise_key": "hanging_knee_raise",
-          "sets": 3,
-          "rep_min": 10,
-          "rep_max": 15,
-          "rest_sec": 60,
-          "variant": "A"
-        },
-        {
-          "exercise_key": "cable_pallof_press",
-          "sets": 3,
-          "rep_min": 10,
-          "rep_max": 12,
-          "rest_sec": 60,
-          "variant": "B"
-        },
-        {
-          "exercise_key": "side_plank",
-          "sets": 3,
-          "rep_min": 20,
-          "rep_max": 40,
-          "rest_sec": 45,
-          "variant": "B"
-        },
-        {
-          "exercise_key": "hanging_knee_raise",
-          "sets": 3,
-          "rep_min": 10,
-          "rep_max": 15,
-          "rest_sec": 60,
-          "variant": "B"
         }
       ]
     },
@@ -762,7 +761,7 @@
           "rest_sec": 100
         },
         {
-          "exercise_key": "hanging_knee_raise",
+          "exercise_key": "captain_chair_leg_raise",
           "sets": 3,
           "rep_min": 10,
           "rep_max": 15,

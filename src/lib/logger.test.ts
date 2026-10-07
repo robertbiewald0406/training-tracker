@@ -194,9 +194,9 @@ describe('Wiederaufnahme', () => {
     expect(derivePosition(day, all, 's1', false, plan).itemIdx).toBe(day.items.length)
   })
   it('Alternative, die selbst Plan-Uebung ist: Zuordnung entscheidet (Tausch-Fall)', () => {
-    // Brust: Position 0 = Incline Press, Position 1 = Chest Press (beide sind gegenseitig Alternativen).
+    // Brust: Position 0 = Incline Press, Position 1 = MTS Chest Press (beide sind gegenseitig Alternativen).
     // Incline ist belegt: Chest Press an Position 0, Incline an Position 1.
-    const a = [1, 2, 3, 4].map((i) => mk({ id: `a${i}`, exercise_key: 'hs_chest_press', set_no: i, logged_at: `2026-10-05T10:0${i}:00Z` }))
+    const a = [1, 2, 3, 4].map((i) => mk({ id: `a${i}`, exercise_key: 'mts_chest_press', set_no: i, logged_at: `2026-10-05T10:0${i}:00Z` }))
     const assign = Object.fromEntries(a.map((x) => [x.id, 0]))
     const per = setsByPosition(day, plan, a, 's1', assign)
     expect(per.map((l) => l.length)).toEqual([4, ...day.items.slice(1).map(() => 0)])

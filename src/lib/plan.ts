@@ -12,6 +12,7 @@ export interface Exercise {
   secondary_muscles: string[]
   alternatives: string[]
   cue: string
+  warning?: string // Warnhinweis, wird auffaellig unter dem Hinweis gezeigt
 }
 export interface PlanItem {
   exercise_key: string

@@ -34,6 +34,7 @@ import { SetProgress } from '../ui/SetProgress'
 import { Check, Chevron, DAY_ICONS, Flame, Trophy } from '../ui/icons'
 import { LastTime } from './LastTime'
 import { SetEditor, type SetValues } from './SetEditor'
+import { Warning } from '../ui/Warning'
 
 interface Props {
   session: LocalRow<'session'>
@@ -287,6 +288,7 @@ export function Workout({ session, sessions, sets }: Props) {
           })}
         </div>
         {panel === `${idx}:cue` && <p className="text-lg">{ex.cue}</p>}
+        <Warning text={ex.warning} />
         {panel === `${idx}:alt` && (
           <div className="flex flex-col gap-2">
             <p className="text-base">Belegt? Alternative wählen:</p>

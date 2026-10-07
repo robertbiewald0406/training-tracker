@@ -36,11 +36,17 @@ Hosting: GitHub Pages über GitHub Actions (Vite `base` auf den Repo-Namen).
   sonst B; auf der Startseite per Umschalter änderbar ("Nächste Woche: B (Hinten)"). Sie steckt ohne DB-Änderung im
   day_key (`mi_beine_a`, `mi_beine_b`). Zuordnung zum Plan-Tag über das Präfix (`planDayForKey`, `dayKeyMatches`,
   `resolveSessionDay` in src/lib/logger.ts). Vorbelegung und "Letztes Mal": gleiche Variante zuerst, sonst die andere.
-- Verteilung: Bauch/Rumpf (Pallof, Plank bzw. Seitstütz, Knieheben) nur an den Beintagen, nach den Waden; Freitag nur
-  eine Bauchübung, sonst keine. Adduktoren nur in Variante A (Quads), Abduktoren nur in B (Hams), Waden in beiden.
+- Verteilung: Bauch nur Montag (captain_chair_leg_raise 3 x 10-15, dead_bug 3 x 8-12, je 60 s Pause) und Freitag
+  (captain_chair_leg_raise 3 x 10-15), jeweils am Ende. Beintage ohne Bauch. Adduktoren nur in Variante A (Quads),
+  Abduktoren nur in B (Hams), Waden in beiden.
+- Stillgelegt (`retired`: true, Definition bleibt, damit alte Sätze lesbar sind): hs_chest_press, plank, side_plank,
+  cable_pallof_press, hanging_knee_raise. Eine retired-Übung steht nie in einem Tag oder in alternatives einer
+  aktiven Übung (Test in plan.test.tsx). Schlüssel nie umbenennen oder löschen.
+- Optionales Feld `warning` je Übung (captain_chair_leg_raise, dead_bug): gelber Hinweiskasten (src/ui/Warning.tsx)
+  direkt unter dem Hinweis `cue`, nur bei Übungen mit warning.
 - Zeitübungen (`unit: "sec"`: plank, side_plank): Sekunden statt Wiederholungen (5-s-Schritte, direkte Eingabe,
   Button "Stoppuhr"). Dauer steht in `reps`, weight_kg ist 0. Kein 1RM/Rekord für Zeitübungen.
-- Körpergewicht (`bodyweight`: plank, side_plank, hanging_knee_raise): Gewicht heißt "Zusatzgewicht (kg)", ohne
+- Körpergewicht (`bodyweight`: captain_chair_leg_raise, dead_bug, dazu die stillgelegten plank, side_plank, hanging_knee_raise): Gewicht heißt "Zusatzgewicht (kg)", ohne
   Verlauf mit 0 vorbelegt.
 - Einseitig (`unilateral`): cable_lateral_raise, hs_iso_row, cable_pallof_press, side_plank (je Seite ein Satz).
 - Wiedereinstieg: ramp_up in plan.json. `weeks` > 0: so viele Wochen ab der ersten Session ein Satz weniger
