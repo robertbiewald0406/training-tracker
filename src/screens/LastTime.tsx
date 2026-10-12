@@ -1,4 +1,5 @@
 import { plan } from '../lib/plan'
+import { segText } from '../lib/segments'
 import { daysBetween, fmtKg, type SessionLog } from '../lib/stats'
 import { Card } from '../ui/Card'
 
@@ -39,7 +40,7 @@ export function LastTime({ log, current, now = new Date() }: { log: SessionLog |
             <span className="mr-1 text-sm font-semibold">{i + 1}.</span>
             {g
               .map((s) => {
-                const v = plan.exercises[s.exercise_key]?.unit === 'sec' ? `${s.reps} s` : `${fmtKg(s.weight_kg)} × ${s.reps}`
+                const v = plan.exercises[s.exercise_key]?.unit === 'sec' ? `${s.reps} s` : `${fmtKg(s.weight_kg)} × ${s.reps}${segText(s.note, fmtKg)}`
                 return `${SIDE[s.side]}${SIDE[s.side] ? ' ' : ''}${v}`
               })
               .join(' · ')}

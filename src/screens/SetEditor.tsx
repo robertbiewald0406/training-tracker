@@ -6,6 +6,7 @@ import { Segmented } from '../ui/Segmented'
 import { Stepper } from '../ui/Stepper'
 import { Toggle } from '../ui/Toggle'
 import { compareSets, fmtKg, type Trend } from '../lib/stats'
+import { SEGMENT_KINDS, SEGMENT_LABEL, suggestSegment, type Segment, type SegmentKind } from '../lib/segments'
 import { ArrowDown, ArrowUp, Flame } from '../ui/icons'
 
 export interface SetValues {
@@ -13,6 +14,7 @@ export interface SetValues {
   reps: number
   warmup: boolean
   failure: boolean
+  segment: Segment | null
 }
 
 interface Props {
@@ -21,6 +23,7 @@ interface Props {
   timed?: boolean // Zeituebung: Sekunden statt Wiederholungen, mit Stoppuhr
   bodyweight?: boolean // Gewicht = Zusatzgewicht
   initialFlags?: { warmup: boolean; failure: boolean }
+  initialSegment?: Segment | null
   stepKg: number
   onStepKg: (n: number) => void
   rampUp: boolean
@@ -78,9 +81,31 @@ export function SetEditor(p: Props) {
   const [warmup, setWarmup] = useState(p.initialFlags?.warmup ?? false)
   const [failure, setFailure] = useState(p.initialFlags?.failure ?? false)
 
+  const [segKind, setSegKind] = useState<SegmentKind | null>(p.initialSegment?.kind ?? null)
+  const [segWeight, setSegWeight] = useState(p.initialSegment ? formatNumber(p.initialSegment.weight_kg) : '')
+  const [segReps, setSegReps] = useState(p.initialSegment ? String(p.initialSegment.reps) : '')
+
   const w = parseNumber(weight)
   const r = parseNumber(reps)
-  const valid = w !== null && w >= 0 && r !== null && Number.isInteger(r) && r >= 1
+  const sw = parseNumber(segWeight)
+  const sr = parseNumber(segReps)
+  const segValid = segKind === null || (sw !== null && sw >= 0 && sr !== null && Number.isInteger(sr) && sr >= 1)
+  const valid = w !== null && w >= 0 && r !== null && Number.isInteger(r) && r >= 1 && segValid
+  const segment: Segment | null = segKind && sw !== null && sr !== null ? { kind: segKind, weight_kg: sw, reps: sr } : null
+
+  // Art waehlen (nochmal tippen = aus). Beim ersten Oeffnen wird das Segment aus dem ersten vorbelegt.
+  const pickSegment = (k: SegmentKind) => {
+    if (segKind === k) return setSegKind(null)
+    if (segKind === null && w !== null && r !== null) {
+      const sug = suggestSegment(k, w, r, p.stepKg)
+      setSegWeight(formatNumber(sug.weight_kg))
+      setSegReps(String(sug.reps))
+    }
+    setSegKind(k)
+  }
+  const bumpSegWeight = (dir: 1 | -1) =>
+    setSegWeight(formatNumber(Math.max(0, Math.round(((sw ?? 0) + dir * p.stepKg) * 100) / 100)))
+  const bumpSegReps = (dir: 1 | -1) => setSegReps(String(Math.max(1, Math.round(sr ?? 0) + dir)))
 
   const bumpWeight = (dir: 1 | -1) =>
     setWeight(formatNumber(Math.max(0, Math.round(((w ?? 0) + dir * p.stepKg) * 100) / 100)))
@@ -143,10 +168,42 @@ export function SetEditor(p: Props) {
         <Toggle label="Aufwärmsatz" checked={warmup} onChange={setWarmup} />
         <Toggle label="Bis Versagen" checked={failure} onChange={setFailure} icon={<Flame className="size-5 shrink-0" />} />
       </div>
+      {!timed && (
+        <div className="space-y-3">
+          <div role="group" aria-label="Zweites Segment" className="flex gap-2">
+            {SEGMENT_KINDS.map((k) => (
+              <Toggle key={k} label={SEGMENT_LABEL[k]} checked={segKind === k} onChange={() => pickSegment(k)} />
+            ))}
+          </div>
+          {segKind && (
+            <div className="space-y-3 border-[3px] border-ink bg-baby p-3">
+              <p className="font-display text-lg uppercase tracking-wide">{SEGMENT_LABEL[segKind]}: direkt danach</p>
+              <Stepper
+                label={`${SEGMENT_LABEL[segKind]} Gewicht`}
+                unit={p.bodyweight ? 'Zusatzgewicht (kg)' : p.weightUnit}
+                inputMode="decimal"
+                value={segWeight}
+                onValue={setSegWeight}
+                onMinus={() => bumpSegWeight(-1)}
+                onPlus={() => bumpSegWeight(1)}
+              />
+              <Stepper
+                label={`${SEGMENT_LABEL[segKind]} Wiederholungen`}
+                unit="Wiederholungen"
+                inputMode="numeric"
+                value={segReps}
+                onValue={setSegReps}
+                onMinus={() => bumpSegReps(-1)}
+                onPlus={() => bumpSegReps(1)}
+              />
+            </div>
+          )}
+        </div>
+      )}
       {p.rampUp && !timed && <p className="text-base">Wiedereinstieg: Nicht bis Versagen empfohlen.</p>}
       {/* Klebt am unteren Rand (ueber der Tab-Leiste), damit Speichern bei langen Karten immer erreichbar bleibt. */}
       <div className="sticky bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-10 -mx-1 bg-card px-1 pt-1">
-        <Button variant="primary" disabled={!valid || p.busy} onClick={() => valid && p.onSave({ weight: w, reps: r, warmup, failure })}>
+        <Button variant="primary" disabled={!valid || p.busy} onClick={() => valid && p.onSave({ weight: w, reps: r, warmup, failure, segment: timed ? null : segment })}>
           {p.saveLabel}
         </Button>
       </div>

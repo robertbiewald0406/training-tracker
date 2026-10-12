@@ -1,4 +1,5 @@
 import type { Plan } from './plan'
+import { parseSegment } from './segments'
 import type { BodyweightRow, Side, WorkoutSetRow } from './types'
 import { weekStart } from './logger'
 
@@ -32,7 +33,10 @@ export function hardSetCount(sets: WorkoutSetRow[]): number {
 }
 
 export const volumeOf = (sets: WorkoutSetRow[]) =>
-  sets.filter(work).reduce((sum, s) => sum + s.weight_kg * s.reps, 0)
+  sets.filter(work).reduce((sum, s) => {
+    const seg = parseSegment(s.note)
+    return sum + s.weight_kg * s.reps + (seg ? seg.weight_kg * seg.reps : 0)
+  }, 0)
 
 function startOf(sessions: SessionLike[]) {
   return new Map(sessions.map((s) => [s.id, new Date(s.started_at)]))

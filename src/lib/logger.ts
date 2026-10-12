@@ -1,4 +1,5 @@
 import type { Exercise, Plan, PlanDay, PlanItem } from './plan'
+import { encodeSegment, type Segment } from './segments'
 import type { Side, WorkoutSetRow } from './types'
 
 interface SessionLike {
@@ -221,6 +222,7 @@ export function pendingRightSide(
 }
 
 export interface BuildSetInput {
+  segment?: Segment | null // zweites Segment (Drop/Aufstocken/Backoff)
   sessionId: string
   exerciseKey: string
   setNo: number
@@ -243,7 +245,7 @@ export function buildSetRow(i: BuildSetInput): WorkoutSetRow {
     is_warmup: i.warmup,
     side: i.side,
     logged_at: (i.now ?? new Date()).toISOString(),
-    note: null,
+    note: i.segment ? encodeSegment(i.segment) : null,
   }
 }
 

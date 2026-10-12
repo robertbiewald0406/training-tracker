@@ -54,6 +54,11 @@ Hosting: GitHub Pages über GitHub Actions (Vite `base` auf den Repo-Namen).
   volle Satzzahl, der Hinweis erscheint nirgends. Aktuell 0.
 
 ## Datenregeln
+- Zweites Segment je Satz (Dropsatz, Aufstocksatz, Backoff-Satz; Schalter im Satz-Editor, öffnet Gewicht und
+  Wiederholungen des zweiten Teils, nicht bei Zeitübungen): Ein Satz bleibt eine Zeile in workout_set,
+  weight_kg/reps = erstes Segment, das zweite steht in `note` als `seg:<drop|topup|backoff>|<kg>|<wdh>`
+  (src/lib/segments.ts, kein Schema-Umbau). Zählt als ein harter Satz; das Volumen enthält beide Segmente,
+  1RM/Rekord nur das erste.
 - weight_kg = Zusatz- bzw. Maschinengewicht. Kurzhanteln: Gewicht pro Hand.
   Plate-Loaded: Platten pro Seite in kg, Stack: Stackgewicht.
 - Einseitige Übungen (Kabel-Seitheben, Iso Row): je Seite ein Satz, side = left/right. Sonst 'both'.

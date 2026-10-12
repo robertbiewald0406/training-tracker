@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { encodeSegment, parseSegment, segText } from '../lib/segments'
 import { deleteMeta, getMeta, setMeta, stripMeta } from '../lib/db'
 import {
   buildSetRow,
@@ -192,6 +193,7 @@ export function Workout({ session, sessions, sets }: Props) {
         reps: v.reps,
         warmup: v.warmup,
         failure: v.failure,
+        segment: v.segment,
         side,
       })
       await saveAndSync(supabase, 'workout_set', row)
@@ -218,6 +220,7 @@ export function Workout({ session, sessions, sets }: Props) {
         reps: v.reps,
         is_warmup: v.warmup,
         rir: v.failure ? 0 : null,
+        note: v.segment ? encodeSegment(v.segment) : parseSegment(editSet.note) ? null : editSet.note,
       })
       setEditing(null)
     } finally {
@@ -331,6 +334,7 @@ export function Workout({ session, sessions, sets }: Props) {
           title={`Satz korrigieren${editSet.side !== 'both' ? ` · ${SIDE_TEXT[editSet.side]}` : ''}`}
           initial={initial}
           initialFlags={{ warmup: editSet.is_warmup, failure: editSet.rir === 0 }}
+          initialSegment={parseSegment(editSet.note)}
           stepKg={stepKg}
           onStepKg={setStepKg}
           rampUp={rampUp}
@@ -366,7 +370,7 @@ export function Workout({ session, sessions, sets }: Props) {
             Letzter Satz:{' '}
             {isTimed(plan.exercises[lastSet.exercise_key])
               ? `${lastSet.reps} s`
-              : `${kg(lastSet.weight_kg)} kg × ${lastSet.reps}`}
+              : `${kg(lastSet.weight_kg)} kg × ${lastSet.reps}${segText(lastSet.note, kg)}`}
             <span className="ml-2 font-sans text-base font-semibold">
               {plan.exercises[lastSet.exercise_key].name}
               {lastSet.side !== 'both' ? `, ${SIDE_TEXT[lastSet.side]}` : ''}
