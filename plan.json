@@ -476,9 +476,7 @@
       "secondary_muscles": [
         "hip_flexors"
       ],
-      "alternatives": [
-        "dead_bug"
-      ],
+      "alternatives": [],
       "bodyweight": true,
       "cue": "Unterarme aufgestützt, Rücken fest am Polster. Knie zur Brust ziehen, Becken dabei nur leicht nach hinten kippen, langsam absenken. Zusatzgewicht in kg, sonst 0",
       "warning": "Bandscheibe: Rücken fest am Polster bzw. Boden. Knie immer gebeugt, nie gestreckte Beine. Kein Hohlkreuz, Bewegungsumfang klein, langsam und ohne Schwung, nicht pressen. Bei Schmerz, Ausstrahlung ins Bein, Kribbeln oder Taubheit sofort abbrechen und abklären lassen."
@@ -537,7 +535,21 @@
       ],
       "bodyweight": true,
       "cue": "Rücken liegend, Arme senkrecht nach oben, Knie in 90 Grad über der Hüfte. Gegenüberliegenden Arm und Bein langsam absenken, unterer Rücken bleibt am Boden. Wiederholungen = je Seite eine, abwechselnd",
-      "warning": "Bandscheibe: Rücken fest am Polster bzw. Boden. Knie immer gebeugt, nie gestreckte Beine. Kein Hohlkreuz, Bewegungsumfang klein, langsam und ohne Schwung, nicht pressen. Bei Schmerz, Ausstrahlung ins Bein, Kribbeln oder Taubheit sofort abbrechen und abklären lassen."
+      "warning": "Bandscheibe: Rücken fest am Polster bzw. Boden. Knie immer gebeugt, nie gestreckte Beine. Kein Hohlkreuz, Bewegungsumfang klein, langsam und ohne Schwung, nicht pressen. Bei Schmerz, Ausstrahlung ins Bein, Kribbeln oder Taubheit sofort abbrechen und abklären lassen.",
+      "retired": true
+    },
+    "russian_twist": {
+      "name": "Russian Twist (sitzend, ohne Gewicht)",
+      "equipment": "Boden oder Bank",
+      "attachment": "Keine",
+      "primary_muscle": "obliques",
+      "secondary_muscles": [
+        "abs"
+      ],
+      "alternatives": [],
+      "bodyweight": true,
+      "cue": "Sitzend, Oberkörper leicht zurück, Füße fest. Rumpf langsam von rechts nach links drehen, Becken stabil. Kleiner Bewegungsumfang. Zusatzgewicht nur nach ärztlicher oder physiotherapeutischer Freigabe",
+      "warning": "Bandscheibe: Rotation nur ohne Gewicht, Becken stabil, kleiner Bewegungsumfang. Bei Schmerz, Ausstrahlung ins Bein, Kribbeln oder Taubheit sofort abbrechen und abklären lassen."
     }
   },
   "days": [
@@ -583,16 +595,16 @@
         },
         {
           "exercise_key": "captain_chair_leg_raise",
-          "sets": 3,
-          "rep_min": 10,
+          "sets": 4,
+          "rep_min": 12,
           "rep_max": 15,
           "rest_sec": 60
         },
         {
-          "exercise_key": "dead_bug",
+          "exercise_key": "russian_twist",
           "sets": 3,
-          "rep_min": 8,
-          "rep_max": 12,
+          "rep_min": 16,
+          "rep_max": 20,
           "rest_sec": 60
         }
       ]
@@ -835,9 +847,16 @@
         },
         {
           "exercise_key": "captain_chair_leg_raise",
-          "sets": 3,
-          "rep_min": 10,
+          "sets": 4,
+          "rep_min": 12,
           "rep_max": 15,
+          "rest_sec": 60
+        },
+        {
+          "exercise_key": "russian_twist",
+          "sets": 3,
+          "rep_min": 16,
+          "rep_max": 20,
           "rest_sec": 60
         }
       ]
