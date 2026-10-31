@@ -2,6 +2,7 @@ import { PGlite } from '@electric-sql/pglite'
 import { beforeAll, describe, expect, it } from 'vitest'
 import m002 from '../../supabase/migrations/002_session_adjustment_plan_override.sql?raw'
 import m003 from '../../supabase/migrations/003_push_weekly_report.sql?raw'
+import m005 from '../../supabase/migrations/005_service_role_grants.sql?raw'
 import m004 from '../../supabase/migrations/004_push_weekly_cron.sql?raw'
 import schema from '../../supabase/schema.sql?raw'
 import { plan } from './plan'
@@ -29,8 +30,9 @@ beforeAll(async () => {
   await db.exec(m002)
   await db.exec(m003)
   await db.exec(m003) // mehrfach ausfuehrbar
-  // Supabase gibt service_role standardmaessig alle Rechte auf Tabellen in public (und umgeht RLS).
-  await db.exec('grant all on all tables in schema public to service_role')
+  // Wie in einem Projekt ohne automatische Rechte: service_role hat nur, was die Migrationen ausdruecklich vergeben.
+  await db.exec(m005)
+  await db.exec(m005) // mehrfach ausfuehrbar
 }, 60_000)
 
 let n = 0
@@ -234,6 +236,33 @@ describe('Migration 003 und weekly_report()', () => {
       { endpoint: 'https://push.example/b', user_id: OTHER },
       { endpoint: 'https://push.example/d', user_id: USER },
     ])
+  })
+})
+
+describe('Migration 005: Rechte der Edge Function (service_role)', () => {
+  const asServiceRole = async (query: string) => {
+    await db.exec('set role service_role')
+    try {
+      await db.query(query)
+      return 'ok'
+    } catch (e) {
+      return (e as Error).message
+    } finally {
+      await db.exec('reset role')
+    }
+  }
+  it('service_role darf Abos lesen, aendern, loeschen und den Bericht abrufen', async () => {
+    await db.exec(`insert into push_subscription (user_id, endpoint, p256dh, auth) values ('${USER}', 'https://push.example/z', 'k', 'a') on conflict do nothing`)
+    expect(await asServiceRole('select id, user_id, endpoint, p256dh, auth, last_week_sent from push_subscription')).toBe('ok')
+    expect(await asServiceRole("update push_subscription set last_week_sent = '2026-10-19' where endpoint = 'https://push.example/z'")).toBe('ok')
+    expect(await asServiceRole("delete from push_subscription where endpoint = 'https://push.example/z'")).toBe('ok')
+    expect(await asServiceRole(`select weekly_report('${USER}')`)).toBe('ok')
+  })
+  it('Bericht-Tabellen nur lesbar, nicht schreibbar; andere Rollen unveraendert ohne Zugriff', async () => {
+    expect(await asServiceRole('select count(*) from session')).toBe('ok')
+    expect(await asServiceRole("delete from session where id = '00000000-0000-0000-0000-000000000000'")).toMatch(/permission denied/)
+    const r = await db.query<{ has: boolean }>("select has_table_privilege('anon', 'push_subscription', 'select') as has")
+    expect(r.rows[0].has).toBe(false)
   })
 })
 

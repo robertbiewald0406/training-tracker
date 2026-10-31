@@ -140,7 +140,7 @@ Einrichtung für den Besitzer: docs/push-einrichtung.md. Nur auf dem iPhone, wen
   vergleicht beide). Ohne Plan-Daten, daher nur Anzahlen. Edge Function supabase/functions/weekly-push (Text in
   message.ts: nur Anzahlen, ohne Namen, Gewichte, Körpergewicht).
 - Zeitplan: pg_cron (Migration 004) Sonntag 16 und 17 Uhr UTC, `send_weekly_report_push()` sendet nur bei Berlin
-  Sonntag 18 Uhr (Sommer-/Winterzeit). Je Abo und Woche einmal (`last_week_sent`); 404/410 vom Push-Dienst löscht das Abo.
+  Sonntag 18 Uhr (Sommer-/Winterzeit). Migration 005 vergibt service_role die Tabellenrechte (nicht automatisch vorhanden). Je Abo und Woche einmal (`last_week_sent`); 404/410 vom Push-Dienst löscht das Abo.
 
 ## Backup
 - Einstellungen: "Backup exportieren" (JSON mit Formatversion, Zeitstempel, session/workout_set/bodyweight; ohne

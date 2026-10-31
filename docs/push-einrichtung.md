@@ -25,7 +25,7 @@ GitHub, dein Repo, Settings, Secrets and variables, Actions, Reiter **Variables*
 - Wert: der **Public Key**
 
 ### 3. Datenbank vorbereiten
-Supabase, dein Projekt, SQL Editor: den ganzen Inhalt von `supabase/migrations/003_push_weekly_report.sql` einfügen, **Run**. Erwartet: "Success. No rows returned".
+Supabase, dein Projekt, SQL Editor: nacheinander den ganzen Inhalt von `supabase/migrations/003_push_weekly_report.sql` und danach von `supabase/migrations/005_service_role_grants.sql` einfügen, jeweils **Run**. Erwartet: "Success. No rows returned". (005 gibt der Edge Function die nötigen Rechte; ohne sie kommt "permission denied for table push_subscription".)
 
 ### 4. Geheimnisse und Funktion in Supabase (Terminal)
 Du brauchst die Projekt-ID: in Supabase unter Project Settings, General ("Project ID", z. B. `abcdefghijklmnop`).
