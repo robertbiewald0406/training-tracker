@@ -22,7 +22,7 @@ export function LoginScreen() {
   }
 
   const input =
-    'min-h-14 w-full border-[3px] border-ink bg-white px-4 text-xl text-ink outline-none placeholder:text-[#5f4f85] focus:bg-baby/40'
+    'min-h-14 w-full border-2 border-ink bg-card px-4 text-xl text-ink outline-none placeholder:text-ink/60 focus:bg-info'
 
   return (
     <div className="relative min-h-dvh overflow-hidden">
@@ -54,7 +54,7 @@ export function LoginScreen() {
               required
             />
             {error && (
-              <p role="alert" className="border-[3px] border-ink bg-err px-3 py-2 text-white">
+              <p role="alert" className="border-2 border-ink bg-err px-3 py-2 text-white">
                 {error}
               </p>
             )}

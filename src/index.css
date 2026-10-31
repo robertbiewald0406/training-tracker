@@ -1,17 +1,17 @@
 /* Nur woff2, nur Latin, nur benutzte Schnitte (Dateien aus @fontsource, keine externen Server). */
 @font-face {
-  font-family: "Righteous";
+  font-family: "Barlow Condensed";
   font-style: normal;
-  font-weight: 400;
+  font-weight: 600;
   font-display: swap;
-  src: url("../node_modules/@fontsource/righteous/files/righteous-latin-400-normal.woff2") format("woff2");
+  src: url("../node_modules/@fontsource/barlow-condensed/files/barlow-condensed-latin-600-normal.woff2") format("woff2");
 }
 @font-face {
-  font-family: "Yellowtail";
+  font-family: "Barlow Condensed";
   font-style: normal;
-  font-weight: 400;
+  font-weight: 700;
   font-display: swap;
-  src: url("../node_modules/@fontsource/yellowtail/files/yellowtail-latin-400-normal.woff2") format("woff2");
+  src: url("../node_modules/@fontsource/barlow-condensed/files/barlow-condensed-latin-700-normal.woff2") format("woff2");
 }
 @font-face {
   font-family: "Barlow Semi Condensed";
@@ -31,27 +31,45 @@
 @import "tailwindcss";
 
 @theme {
-  --color-sky-top: #bde8fa;
-  --color-sky-bottom: #ffd1e8;
-  --color-card: #fff9fd;
-  --color-ink: #2b1b4d;
-  --color-pink: #e91e8c;
-  --color-turq: #00b7c3;
-  --color-baby: #8fd8f5;
-  --color-sun: #ffd23f; /* nur als Flaeche mit dunklem Text */
-  --color-ok: #14a37f;
-  --color-err: #d7263d;
-  --color-neon: #ff5cb8; /* nur als Flaeche oder Kontur */
+  /* Dusk: Sand, Nachtblau, Korall, Petrol. Rollen statt Farbnamen; Werte hell (hier) und dunkel (unten). */
+  --color-sky-top: #f3e9dc; /* Seitenhintergrund oben */
+  --color-sky-bottom: #eadcc8; /* Seitenhintergrund unten */
+  --color-card: #fffbf5; /* Kartengrund, ruhig und einfarbig */
+  --color-ink: #12203a; /* Text, Konturen */
+  --color-accent: #b8391a; /* Korall: Wortmarke, Akzente, Symbole (nie als Fuellung mit Text) */
+  --color-mark: #ee9467; /* aktive Flaeche (Auswahl, Haupt-Button) */
+  --color-alt: #8cc9c4; /* zweite Flaeche (Petrol hell) */
+  --color-info: #d3e2e8; /* Hinweisflaeche */
+  --color-warn: #ebc264; /* Warnhinweis (Flaeche) */
+  --color-ok: #8fcba4; /* erledigt (Flaeche) */
+  --color-err: #b3261e; /* nur Fehlermeldungen, weisser Text */
+  --color-shade: #12203a; /* Kante der Karten */
 
-  --font-display: "Righteous", system-ui, sans-serif;
-  --font-script: "Yellowtail", cursive;
+  --font-display: "Barlow Condensed", system-ui, sans-serif;
   --font-sans: "Barlow Semi Condensed", system-ui, sans-serif;
 
-  --shadow-hard: 4px 4px 0 0 var(--color-ink);
+  --shadow-hard: 0 3px 0 0 var(--color-shade);
 }
 
+/* Dunkel folgt dem iPhone. Gleiche Rollen, Text (ink) hell auf dunklen Flaechen. */
 :root {
-  color-scheme: light;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-sky-top: #0f1a2e;
+    --color-sky-bottom: #16243d;
+    --color-card: #1a2842;
+    --color-ink: #f3e9dc;
+    --color-accent: #ff8a63;
+    --color-mark: #9c3f22;
+    --color-alt: #1f5f63;
+    --color-info: #27405c;
+    --color-warn: #7a5a12;
+    --color-ok: #2b6b49;
+    --color-err: #c23b2e;
+    --color-shade: #000000;
+  }
 }
 
 html {
@@ -87,9 +105,9 @@ body {
 
 h1, h2, h3 {
   font-family: var(--font-display);
-  font-weight: 400;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
 }
 
 /* Gewicht, Wiederholungen, Timer: Barlow fett, tabellarische Ziffern. */

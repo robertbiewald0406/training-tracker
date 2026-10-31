@@ -24,7 +24,7 @@ const pct = (p: number) => `${p > 0 ? '+' : p < 0 ? '−' : '±'}${String(Math.r
 
 function Section({ title, sentence, children }: { title: string; sentence: string; children?: ReactNode }) {
   return (
-    <section className="space-y-2 border-t-[3px] border-ink pt-3">
+    <section className="space-y-2 border-t-2 border-ink pt-3">
       <h3 className="text-lg">{title}</h3>
       <p className="text-base">{sentence}</p>
       {children}
@@ -77,7 +77,7 @@ export function WeekReportCard({ sessions, sets, adjustments, bodyweight, now = 
       disabled={disabled}
       aria-label={label}
       onClick={() => setWeek(shiftWeek(week, dir))}
-      className="flex size-12 shrink-0 items-center justify-center border-[3px] border-ink bg-card disabled:text-[#6b5b8c]"
+      className="flex size-12 shrink-0 items-center justify-center border-2 border-ink bg-card disabled:text-ink/50"
     >
       <Chevron dir={dir < 0 ? 'left' : 'right'} className="size-5" />
     </button>
@@ -153,8 +153,8 @@ export function WeekReportCard({ sessions, sets, adjustments, bodyweight, now = 
               </span>
               <span className="num w-8 shrink-0 text-right text-xl">{m.sets}</span>
               <span
-                className={`w-24 shrink-0 border-[3px] border-ink px-1 py-1 text-center text-base leading-tight ${
-                  m.status === 'im Bereich' ? 'bg-ok' : m.status === 'darunter' ? 'bg-baby' : 'bg-neon'
+                className={`w-24 shrink-0 border-2 border-ink px-1 py-1 text-center text-base leading-tight ${
+                  m.status === 'im Bereich' ? 'bg-ok' : m.status === 'darunter' ? 'bg-info' : 'bg-mark'
                 }`}
               >
                 {m.status === 'darueber' ? 'darüber' : m.status}

@@ -33,7 +33,7 @@ export function RestTimer({ endsAt, onAdjust, onSkip }: Props) {
   const adj = 'num !min-h-14 !w-14 shrink-0 !px-0 !text-base'
   return (
     <div className="fixed inset-x-2 top-[calc(0.5rem+env(safe-area-inset-top))] z-30 mx-auto max-w-md">
-      <Card tone="baby" className="p-2" role="timer" aria-label={left > 0 ? 'Pause' : 'Pause vorbei'}>
+      <Card tone="info" className="p-2" role="timer" aria-label={left > 0 ? 'Pause' : 'Pause vorbei'}>
         <div className="flex items-center gap-2">
           <div className="min-w-0 flex-1 pl-1">
             <p className="flex items-center gap-1 text-sm font-bold uppercase leading-none">

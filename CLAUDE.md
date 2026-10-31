@@ -150,7 +150,7 @@ Einrichtung für den Besitzer: docs/push-einrichtung.md. Nur auf dem iPhone, wen
 
 ## PWA
 - vite-plugin-pwa (Service Worker nur im Build). Vorab gespeichert: alle App-Dateien, Schriften, Icons, Manifest.
-  Manifest: "Lift Heavy", standalone, start_url/scope = Vite `base` (/training-tracker/), Theme-Farbe Pink.
+  Manifest: "Lift Heavy", standalone, start_url/scope = Vite `base` (/training-tracker/), Theme-/Hintergrundfarbe Nachtblau.
 - Neue Version: wird im Hintergrund geladen, aktiviert sich beim nächsten App-Start; Hinweis "Neue Version" mit
   Button "Aktualisieren" (kein Neuladen mitten im Training). `navigator.storage.persist()` wird angefragt,
   das Ergebnis nie vorausgesetzt (Backup bleibt der Schutz).
@@ -175,30 +175,33 @@ Einrichtung für den Besitzer: docs/push-einrichtung.md. Nur auf dem iPhone, wen
   fällt auf einen neutralen Text zurück, nie auf einen Absturz.
 
 ## Design
-App-Name: "Lift Heavy". Miami Vice, 80er/90er, hell, kräftig, mit Bodybuilding-Symbolik (Babyblau und Pink,
-Sonnenuntergang, Palmen, Hanteln). Kein Dark Mode (`color-scheme: light`).
-- Farben als Tailwind-Tokens (src/index.css, @theme): Himmel-Verlauf #BDE8FA (oben) nach #FFD1E8 (unten)
-  als Seitenhintergrund, Karte #FFF9FD, Text/Kontur/Schatten Indigo #2B1B4D, Pink #E91E8C, Türkis #00B7C3,
-  Babyblau #8FD8F5, Sonnengelb #FFD23F, Erfolg #14A37F, Fehler #D7263D, Neon-Pink #FF5CB8.
-  Gelb nur in der Sonne (Grafik), nie als Schriftfarbe und nicht für Buttons oder Etiketten. Rot (Fehler) nur
-  für echte Fehlermeldungen, nie als Buttonfarbe. Neon-Pink nur als Fläche oder Kontur.
-- Kontrast: normaler Text mind. 4,5:1, sehr großer fetter Text mind. 3:1. Erlaubte Textpaare: Indigo auf
-  Karte/Himmel/Neon/Türkis/Babyblau/Gelb/Erfolg, Weiß auf Fehler. Nicht für Text: Weiß/Karte auf Pink, Erfolg
-  oder Türkis, Indigo auf Fehler-Rot, Pink als Schrift (außer der große "Heavy"-Wortmarke).
-- Schrift (@fontsource, nur woff2, nur Latin, nur benutzte Schnitte, keine externen Server): Righteous für
-  Überschriften und Buttons, Yellowtail nur für das Wort "Heavy", Barlow Semi Condensed 600/700 für Text und
-  alle Zahlen (Gewicht, Wiederholungen, Timer; Klasse `num`, tabellarische Ziffern).
-- Form: 3 px Konturen in Indigo, Buttons mind. 56 px hoch. Harter Schlagschatten (4 px Versatz, keine Unschärfe)
-  nur auf Karten und dem einen Haupt-Button je Ansicht (`primary`, gedrückt 4 px Versatz). Alle anderen Buttons,
-  Schalter und Auswahlfelder sind flach (Kontur, kein Schatten); aktiv = Neon-Fläche. Verläufe nur für Himmel-Hintergrund und Sonne.
-- Marke: Wortmarke "LIFT" (Righteous, Indigo, pinker Schlagschatten) mit "Heavy" (Yellowtail, Pink, 2 px
-  Indigo-Kontur) darunter. Auf Login und in der Kopfzeile. Browser-Titel "Lift Heavy".
-- Symbole: eigene einfarbige Inline-SVGs in src/ui/icons.tsx (keine Emojis, Bilder oder Icon-Bibliothek).
-  Hantel = Sync-Symbol (dreht sich beim Sync), Scheibe = Satzfortschritt, Stoppuhr = Pausentimer,
-  Flamme = "Bis Versagen", Pokal = neuer Rekord, Hantel-Trennlinie, Tagessymbole in `DAY_ICONS`.
-- Bodybuilding-Szenerie (Venice-Beach-Vibes): Strandszene mit Sonne, Wellen und Palmen (`Scene`; fest auf Login
-  und Zitat, im Seitenfluss am Ende der Startseite, nie hinter der Tab-Leiste), Motto-Banner mit Sternen und Langhanteln (`Ribbon`), Dreistreifen-Band unter der Kopfzeile,
-  große Gerätesymbole an den Seiten auf breiten Bildschirmen. Alles rein dekorativ (`aria-hidden`).
-- Regel: Gewicht, Wiederholungen und Timer stehen immer auf ruhigem, einfarbigem Kartengrund. Dekoration nur
-  in Kopfbereich, an Rändern und auf leeren Flächen, nie hinter Zahlen.
-- UI-Bausteine liegen in src/ui/; keine losen Farbwerte in Komponenten.
+App-Name: "Lift Heavy". Stil "Dusk": Bodybuilding der 80er, erwachsen und ruhig (Sand, Nachtblau, Korall, Petrol), feine
+Linien, kantige Formen, wenig Dekoration. Hell und dunkel folgen dem iPhone (`color-scheme: light dark`,
+`prefers-color-scheme`), beide geprüft.
+- Farben als Tailwind-Tokens nach Rollen (src/index.css, @theme hell, `@media (prefers-color-scheme: dark)` dunkel):
+  `sky-top`/`sky-bottom` Seitenhintergrund (Sand #F3E9DC/#EADCC8, dunkel #0F1A2E/#16243D), `card` Kartengrund
+  (#FFFBF5, dunkel #1A2842), `ink` Text und Konturen (Nachtblau #12203A, dunkel Sand #F3E9DC), `accent` Korall für
+  Wortmarke, Sonne und Symbole (#B8391A, dunkel #FF8A63; nie als Fläche mit Text), `mark` aktive Fläche (Auswahl,
+  Haupt-Button; #EE9467, dunkel #9C3F22), `alt` zweite Fläche (Petrol hell #8CC9C4, dunkel #1F5F63), `info`
+  Hinweisfläche, `warn` Warnhinweis, `ok` erledigt, `err` Fehler (nur echte Fehlermeldungen, weißer Text),
+  `shade` Kante der Karten. Alte Namen (pink, neon, turq, baby, sun) gibt es nicht mehr.
+- Kontrast (Test src/ui/theme.test.ts, hell und dunkel): `ink` auf Hintergrund, Karte und allen Flächen mind. 4,5:1,
+  weiß auf `err` mind. 4,5:1, `accent` auf Karte und Hintergrund mind. 3:1. Keine losen Farbwerte in Komponenten.
+- Schrift (@fontsource, nur woff2, nur Latin, nur benutzte Schnitte, keine externen Server): Barlow Condensed 600/700
+  in Versalien mit Sperrung für Überschriften, Buttons und die Wortmarke (`font-display`), Barlow Semi Condensed
+  600/700 für Text und alle Zahlen (Klasse `num`, tabellarische Ziffern).
+- Form: 2 px Konturen in `ink`, scharfe Ecken, Buttons mind. 56 px hoch. Karten und der eine Haupt-Button (`primary`)
+  haben eine feine untere Kante (`shadow-hard`, 3 px, kein Versatz zur Seite); alle anderen Buttons, Schalter und
+  Auswahlfelder sind flach, aktiv = `mark`-Fläche. Keine Verläufe außer dem leichten Seitenhintergrund.
+- Marke: Wortmarke "LIFT" (Text) über feiner Akzentlinie und weit gesperrtem "HEAVY" (accent), in der Kopfzeile und auf
+  der Anmeldeseite (src/ui/Wordmark.tsx). Browser-Titel "Lift Heavy". App-Icon: Nachtblau, Korall-Sonne mit Streifen,
+  Langhantel in Sand (`npm run icons`, scripts/make-icons.mjs).
+- Symbole: eigene Linien-Symbole in src/ui/icons.tsx (24er Raster, Strich 1,75, kantig; keine Emojis, Bilder oder
+  Icon-Bibliothek). Hantel = Sync-Symbol (dreht sich beim Sync), Scheibe = Satzfortschritt, Stoppuhr = Pausentimer,
+  Flamme = "Bis Versagen", Pokal = neuer Rekord, Tagessymbole in `DAY_ICONS` (Langhantel, Kabelzug, Kniebeuge,
+  Schulterdrücken, Hantel, Sonnenaufgang für den Lauftag).
+- Dekoration nur am Rand: Horizont mit flacher Sonne (`Scene`, fest auf Login und Zitat, am Ende der Startseite, nie hinter
+  der Tab-Leiste), Dreifach-Linie unter der Kopfzeile (`StripeBand`), Motto-Band auf der Anmeldeseite (`Ribbon`).
+  Alles rein dekorativ (`aria-hidden`).
+- Regel: Gewicht, Wiederholungen und Timer stehen immer auf ruhigem, einfarbigem Kartengrund. Dekoration nie hinter Zahlen.
+- UI-Bausteine liegen in src/ui/.

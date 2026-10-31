@@ -45,12 +45,12 @@ export function PushCard() {
           />
         </div>
       ) : (
-        <p role="note" className="border-[3px] border-ink bg-baby px-3 py-2 text-base">
+        <p role="note" className="border-2 border-ink bg-info px-3 py-2 text-base">
           {PUSH_MESSAGES[avail.reason]}
         </p>
       )}
       {error && (
-        <p role="alert" className="border-[3px] border-ink bg-err px-3 py-2 text-base text-white">
+        <p role="alert" className="border-2 border-ink bg-err px-3 py-2 text-base text-white">
           {error}
         </p>
       )}

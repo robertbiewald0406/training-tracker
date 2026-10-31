@@ -148,7 +148,7 @@ export function SetEditor(p: Props) {
         </div>
       )}
       {p.reference && w !== null && r !== null && r >= 1 && (
-        <p className="num flex flex-wrap items-center justify-center gap-x-2 border-[3px] border-ink bg-baby px-3 py-2 text-base">
+        <p className="num flex flex-wrap items-center justify-center gap-x-2 border-2 border-ink bg-info px-3 py-2 text-base">
           {(() => {
             const t = timed ? compareDuration(r, p.reference.reps) : compareSets({ weight: w, reps: r }, p.reference)
             return (
@@ -176,7 +176,7 @@ export function SetEditor(p: Props) {
             ))}
           </div>
           {segKind && (
-            <div className="space-y-3 border-[3px] border-ink bg-baby p-3">
+            <div className="space-y-3 border-2 border-ink bg-info p-3">
               <p className="font-display text-lg uppercase tracking-wide">{SEGMENT_LABEL[segKind]}: direkt danach</p>
               <Stepper
                 label={`${SEGMENT_LABEL[segKind]} Gewicht`}

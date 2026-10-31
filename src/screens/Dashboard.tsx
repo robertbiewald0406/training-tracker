@@ -53,7 +53,7 @@ function Delta({ now, before, unit = '' }: { now: number; before: number; unit?:
 
 function Tile({ value, label, now, before, unit }: { value: string; label: string; now: number; before: number; unit?: string }) {
   return (
-    <li className="min-w-0 border-[3px] border-ink bg-card p-2">
+    <li className="min-w-0 border-2 border-ink bg-card p-2">
       <p className="num text-3xl leading-none">{value}</p>
       <p className="mt-1 truncate text-base">{label}</p>
       <Delta now={now} before={before} unit={unit} />
@@ -123,7 +123,7 @@ export function Dashboard({ sessions, sets, bodyweight }: Props) {
             const shown = hist.filter((p) => new Date(p.date).getTime() >= cutoff)
             const trend = prev ? Math.round(last.e1rm * 10) - Math.round(prev.e1rm * 10) : 0
             return (
-              <li key={key} className="border-[3px] border-ink bg-card">
+              <li key={key} className="border-2 border-ink bg-card">
                 <button
                   type="button"
                   aria-expanded={isOpen}
@@ -145,7 +145,7 @@ export function Dashboard({ sessions, sets, bodyweight }: Props) {
                   <Chevron dir={isOpen ? 'down' : 'right'} className="size-5 shrink-0" />
                 </button>
                 {isOpen && (
-                  <div className="space-y-3 border-t-[3px] border-ink p-3">
+                  <div className="space-y-3 border-t-2 border-ink p-3">
                     {shown.length ? (
                       <>
                         <p className="text-base">Geschätztes 1RM (Epley), je Einheit der beste Satz, in kg</p>
@@ -275,7 +275,7 @@ function Bodyweight({ rows, cutoff }: { rows: LocalRow<'bodyweight'>[]; cutoff: 
           placeholder={latest ? formatNumber(latest.kg) : '80,0'}
           value={text}
           onChange={(e) => setText(e.target.value)}
-          className="num min-h-14 min-w-0 flex-1 border-[3px] border-ink bg-white px-3 text-2xl text-ink outline-none placeholder:text-[#5f4f85] focus:bg-baby/40"
+          className="num min-h-14 min-w-0 flex-1 border-2 border-ink bg-card px-3 text-2xl text-ink outline-none placeholder:text-ink/60 focus:bg-info"
         />
         <Button variant="secondary" className="!w-auto shrink-0" disabled={!valid || busy} onClick={() => void save()}>
           Speichern

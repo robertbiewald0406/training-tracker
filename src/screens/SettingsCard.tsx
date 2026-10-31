@@ -115,7 +115,7 @@ export function SettingsCard() {
       <h3 className="text-lg">Backup</h3>
       <p className="text-base">{last ? `Letzter Export: ${fmt(last)}` : 'Noch kein Backup exportiert.'}</p>
       {isBackupStale(last) && (
-        <p role="alert" className="border-[3px] border-ink bg-neon px-3 py-2 text-base">
+        <p role="alert" className="border-2 border-ink bg-mark px-3 py-2 text-base">
           Dein letzter Export ist älter als {BACKUP_STALE_DAYS} Tage. Bitte ein neues Backup exportieren.
         </p>
       )}
@@ -133,7 +133,7 @@ export function SettingsCard() {
         onChange={(e) => void onFile(e.target.files?.[0])}
       />
       {p && (
-        <div role="group" aria-label="Import-Vorschau" className="space-y-3 border-[3px] border-ink bg-baby px-3 py-3">
+        <div role="group" aria-label="Import-Vorschau" className="space-y-3 border-2 border-ink bg-info px-3 py-3">
           <p className="text-lg">
             {pending?.exportedAt ? `Backup vom ${fmt(pending.exportedAt)}: ` : 'Backup: '}
             <strong>
@@ -158,7 +158,7 @@ export function SettingsCard() {
       )}
       {info && <p role="status" className="text-base">{info}</p>}
       {errors.length > 0 && (
-        <ul role="alert" className="space-y-1 border-[3px] border-ink bg-err px-3 py-2 text-base text-white">
+        <ul role="alert" className="space-y-1 border-2 border-ink bg-err px-3 py-2 text-base text-white">
           {errors.map((m, i) => (
             <li key={i}>{m}</li>
           ))}

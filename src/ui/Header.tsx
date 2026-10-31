@@ -14,18 +14,18 @@ export function Header() {
       : s.pending > 0
         ? `${s.pending} offen, jetzt synchronisieren`
         : 'Alles synchronisiert'
-  const tone = s.error ? 'bg-err text-white' : s.pending > 0 || !s.online ? 'bg-neon text-ink' : 'bg-ok text-ink'
+  const tone = s.error ? 'bg-err text-white' : s.pending > 0 || !s.online ? 'bg-mark text-ink' : 'bg-ok text-ink'
   return (
     <header className="flex items-center justify-between gap-3 px-4 pt-[calc(1rem+env(safe-area-inset-top))]">
       <Wordmark size="sm" />
       <button
         onClick={() => void syncNow(supabase, { pull: true })}
         aria-label={label}
-        className={`relative flex size-14 items-center justify-center border-[3px] border-ink active:brightness-95 ${tone}`}
+        className={`relative flex size-14 items-center justify-center border-2 border-ink active:brightness-95 ${tone}`}
       >
         <Dumbbell className={`size-8 ${s.syncing ? 'animate-spin motion-reduce:animate-none' : ''}`} />
         {s.pending > 0 && (
-          <span className="num absolute -right-2 -top-2 min-w-6 border-[3px] border-ink bg-card px-1 text-center text-sm leading-5 text-ink">
+          <span className="num absolute -right-2 -top-2 min-w-6 border-2 border-ink bg-card px-1 text-center text-sm leading-5 text-ink">
             {s.pending}
           </span>
         )}

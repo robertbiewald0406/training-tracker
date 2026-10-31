@@ -8,7 +8,6 @@ export interface LinePoint {
 const W = 320
 const H = 170
 const PAD = { l: 42, r: 12, t: 12, b: 26 }
-const INK = '#2b1b4d'
 
 const dm = (t: number) => new Date(t).toLocaleDateString('de-DE', { day: 'numeric', month: 'numeric' })
 const nf = (n: number) => String(Math.round(n * 10) / 10).replace('.', ',')
@@ -51,22 +50,22 @@ export function LineChart({
     >
       {ticks.map((v) => (
         <g key={v}>
-          <line x1={PAD.l} x2={W - PAD.r} y1={y(v)} y2={y(v)} stroke={INK} strokeOpacity="0.18" strokeWidth="1" />
-          <text x={PAD.l - 6} y={y(v) + 4} textAnchor="end" className="num" fontSize="12" fill={INK}>
+          <line x1={PAD.l} x2={W - PAD.r} y1={y(v)} y2={y(v)} className="stroke-ink" strokeOpacity="0.18" strokeWidth="1" />
+          <text x={PAD.l - 6} y={y(v) + 4} textAnchor="end" className="num fill-ink" fontSize="12">
             {tick(v, hi - lo)}
           </text>
         </g>
       ))}
-      <text x={PAD.l} y={H - 6} className="num" fontSize="12" fill={INK}>
+      <text x={PAD.l} y={H - 6} className="num fill-ink" fontSize="12">
         {dm(t0)}
       </text>
       {t1 !== t0 && (
-        <text x={W - PAD.r} y={H - 6} textAnchor="end" className="num" fontSize="12" fill={INK}>
+        <text x={W - PAD.r} y={H - 6} textAnchor="end" className="num fill-ink" fontSize="12">
           {dm(t1)}
         </text>
       )}
       {main.length > 1 && (
-        <path d={path(main)} fill="none" stroke={INK} strokeWidth="3" strokeLinejoin="round" strokeLinecap="round" />
+        <path d={path(main)} fill="none" className="stroke-ink" strokeWidth="2.500" strokeLinejoin="miter" strokeLinecap="square" />
       )}
       {points.map((p, i) => (
         <circle
@@ -74,9 +73,8 @@ export function LineChart({
           cx={x(p.t)}
           cy={y(p.v)}
           r={line2 ? 3 : i === points.length - 1 ? 7 : 5}
-          fill={line2 ? '#00b7c3' : i === points.length - 1 ? '#e91e8c' : '#fff9fd'}
-          stroke={INK}
-          strokeWidth="2.5"
+          className={`stroke-ink ${line2 ? 'fill-alt' : i === points.length - 1 ? 'fill-accent' : 'fill-card'}`}
+          strokeWidth="2"
         />
       ))}
     </svg>
@@ -102,12 +100,12 @@ export function BarRows({
               <span className="ml-1 text-base font-semibold">(Vorwoche {r.prev})</span>
             </span>
           </div>
-          <div className="relative mt-1 h-5 border-[3px] border-ink bg-card" aria-hidden="true">
-            <div className="h-full bg-neon" style={{ width: `${Math.min(100, (r.value / max) * 100)}%` }} />
+          <div className="relative mt-1 h-5 border-2 border-ink bg-card" aria-hidden="true">
+            <div className="h-full bg-mark" style={{ width: `${Math.min(100, (r.value / max) * 100)}%` }} />
             {r.prev > 0 && (
               <div
-                className="absolute -inset-y-[3px] w-[3px] bg-ink"
-                style={{ left: `calc(${Math.min(100, (r.prev / max) * 100)}% - 1.5px)` }}
+                className="absolute -inset-y-[2px] w-[2px] bg-ink"
+                style={{ left: `calc(${Math.min(100, (r.prev / max) * 100)}% - 1px)` }}
               />
             )}
           </div>

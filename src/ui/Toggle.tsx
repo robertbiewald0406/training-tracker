@@ -15,8 +15,8 @@ export function Toggle({ label, checked, onChange, icon }: Props) {
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className={`flex min-h-14 min-w-0 flex-1 items-center justify-center gap-1.5 border-[3px] border-ink px-2 text-center font-display text-base uppercase leading-tight tracking-wide text-ink
-        ${checked ? 'bg-neon' : 'bg-card'}`}
+      className={`flex min-h-14 min-w-0 flex-1 items-center justify-center gap-1.5 border-2 border-ink px-2 text-center font-display text-base uppercase leading-tight tracking-wide text-ink
+        ${checked ? 'bg-mark' : 'bg-card'}`}
     >
       {icon}
       {label}

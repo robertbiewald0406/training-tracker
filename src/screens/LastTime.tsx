@@ -18,7 +18,7 @@ function ago(iso: string, now: Date) {
 export function LastTime({ log, current, now = new Date() }: { log: SessionLog | null; current: number; now?: Date }) {
   if (!log)
     return (
-      <Card tone="baby" className="py-3">
+      <Card tone="info" className="py-3">
         <p>Erstes Mal bei dieser Übung. Danach siehst du hier deine letzten Werte.</p>
       </Card>
     )
@@ -26,7 +26,7 @@ export function LastTime({ log, current, now = new Date() }: { log: SessionLog |
   for (const s of log.sets) byNo.set(s.set_no, [...(byNo.get(s.set_no) ?? []), s])
   const groups = [...byNo.values()]
   return (
-    <Card tone="baby" className="space-y-2 p-3">
+    <Card tone="info" className="space-y-2 p-3">
       <h2 className="flex items-center gap-2 text-lg">
         Letztes Mal <span className="font-sans text-base normal-case tracking-normal">· {ago(log.startedAt, now)}</span>
       </h2>
@@ -35,7 +35,7 @@ export function LastTime({ log, current, now = new Date() }: { log: SessionLog |
           <li
             key={g[0].set_no}
             aria-current={i === current ? 'step' : undefined}
-            className={`num border-[3px] border-ink px-2 py-1 text-base leading-tight ${i === current ? 'bg-neon' : 'bg-card'}`}
+            className={`num border-2 border-ink px-2 py-1 text-base leading-tight ${i === current ? 'bg-mark' : 'bg-card'}`}
           >
             <span className="mr-1 text-sm font-semibold">{i + 1}.</span>
             {g

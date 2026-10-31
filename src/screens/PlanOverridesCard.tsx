@@ -28,7 +28,7 @@ export function PlanOverridesCard() {
             {rows.map((o) => {
               const d = describeOverride(o, plan)
               return (
-                <li key={o.id} className="space-y-2 border-[3px] border-ink px-3 py-2">
+                <li key={o.id} className="space-y-2 border-2 border-ink px-3 py-2">
                   <p className="text-base">
                     <strong>{d.day}:</strong> {d.text}
                   </p>

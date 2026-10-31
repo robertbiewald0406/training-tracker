@@ -137,8 +137,8 @@ export function Workout({ session, sessions, sets, adjustments, overrides }: Pro
                 onClick={() => go(i)}
                 aria-label={`Übung ${i + 1}: ${plan.exercises[pos.chosen[i] ?? it.exercise_key].name}${full ? ', erledigt' : ''}`}
                 aria-current={i === idx ? 'step' : undefined}
-                className={`num flex min-h-12 w-full items-center justify-center border-[3px] border-ink text-xl ${
-                  i === idx ? 'bg-neon' : full ? 'bg-ok' : 'bg-card'
+                className={`num flex min-h-12 w-full items-center justify-center border-2 border-ink text-xl ${
+                  i === idx ? 'bg-mark' : full ? 'bg-ok' : 'bg-card'
                 }`}
               >
                 {full && i !== idx ? <Check className="size-6" /> : i + 1}
@@ -322,7 +322,7 @@ export function Workout({ session, sessions, sets, adjustments, overrides }: Pro
           </p>
         )}
         {rampUp && (
-          <p className="flex items-center gap-2 border-[3px] border-ink bg-baby px-3 py-2 text-base">
+          <p className="flex items-center gap-2 border-2 border-ink bg-info px-3 py-2 text-base">
             <Flame className="size-5 shrink-0" /> Wiedereinstieg: ein Satz weniger. Nicht bis Versagen.
           </p>
         )}
@@ -338,8 +338,8 @@ export function Workout({ session, sessions, sets, adjustments, overrides }: Pro
                 type="button"
                 aria-expanded={open}
                 onClick={() => setPanel(open ? null : `${idx}:${b.id}`)}
-                className={`flex min-h-12 flex-1 items-center justify-center gap-1 border-[3px] border-ink font-display text-base uppercase tracking-wide ${
-                  open ? 'bg-baby' : 'bg-card'
+                className={`flex min-h-12 flex-1 items-center justify-center gap-1 border-2 border-ink font-display text-base uppercase tracking-wide ${
+                  open ? 'bg-info' : 'bg-card'
                 }`}
               >
                 {b.text}
@@ -359,8 +359,8 @@ export function Workout({ session, sessions, sets, adjustments, overrides }: Pro
                 type="button"
                 aria-pressed={k === chosenKey}
                 onClick={() => update({ ...pos, chosen: { ...pos.chosen, [idx]: k } })}
-                className={`min-h-14 border-[3px] border-ink px-3 text-left text-lg ${
-                  k === chosenKey ? 'bg-neon' : 'bg-card'
+                className={`min-h-14 border-2 border-ink px-3 text-left text-lg ${
+                  k === chosenKey ? 'bg-mark' : 'bg-card'
                 }`}
               >
                 {plan.exercises[k].name}
@@ -383,8 +383,8 @@ export function Workout({ session, sessions, sets, adjustments, overrides }: Pro
               disabled={b.off || busy}
               aria-pressed={adjust === b.id}
               onClick={() => setAdjust(adjust === b.id ? null : b.id)}
-              className={`flex min-h-12 items-center justify-center gap-1 border-[3px] border-ink font-display text-base uppercase tracking-wide text-ink disabled:bg-card disabled:text-[#6b5b8c] ${
-                adjust === b.id ? 'bg-baby' : 'bg-card'
+              className={`flex min-h-12 items-center justify-center gap-1 border-2 border-ink font-display text-base uppercase tracking-wide text-ink disabled:bg-card disabled:text-ink/50 ${
+                adjust === b.id ? 'bg-info' : 'bg-card'
               }`}
             >
               {b.icon}

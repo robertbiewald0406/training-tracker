@@ -100,7 +100,7 @@ function WeekAdjustments({
     .sort((a, b) => a.logged_at.localeCompare(b.logged_at))
   if (!rows.length) return null
   return (
-    <ul className="mt-3 space-y-1 border-t-[3px] border-ink pt-3 text-base" aria-label="Anpassungen dieser Woche">
+    <ul className="mt-3 space-y-1 border-t-2 border-ink pt-3 text-base" aria-label="Anpassungen dieser Woche">
       {rows.map((a) => {
         const d = planDayForKey(inWeek.get(a.session_id)!.day_key, plan)
         return (
@@ -173,8 +173,8 @@ export function Home({ sessions, sets, adjustments, overrides, bodyweight, onQuo
                   aria-pressed={sel}
                   aria-label={`${WEEKDAYS_LONG[day.weekday]} ${day.name}: ${done ? 'erledigt' : 'offen'}${adjText}${sel ? ', gewählt' : ''}`}
                   onClick={() => setPicked(day.key)}
-                  className={`relative flex min-h-16 w-full min-w-0 flex-col items-center justify-center gap-1 border-[3px] border-ink ${
-                    sel ? 'bg-neon' : done ? 'bg-ok' : 'bg-card'
+                  className={`relative flex min-h-16 w-full min-w-0 flex-col items-center justify-center gap-1 border-2 border-ink ${
+                    sel ? 'bg-mark' : done ? 'bg-ok' : 'bg-card'
                   }`}
                 >
                   <span className="font-display uppercase tracking-wider">{WEEKDAYS[day.weekday]}</span>
@@ -182,7 +182,7 @@ export function Home({ sessions, sets, adjustments, overrides, bodyweight, onQuo
                   {adj && (
                     <span
                       aria-hidden="true"
-                      className="num absolute -right-2 -top-2 min-w-6 border-[3px] border-ink bg-card px-1 text-center text-sm leading-5 text-ink"
+                      className="num absolute -right-2 -top-2 min-w-6 border-2 border-ink bg-card px-1 text-center text-sm leading-5 text-ink"
                     >
                       {adj.skipped + adj.swapped}
                     </span>
@@ -229,7 +229,7 @@ export function Home({ sessions, sets, adjustments, overrides, bodyweight, onQuo
             <Button variant="primary" disabled={busy} onClick={() => void start(selected)}>
               Einheit starten
             </Button>
-            <ul className="space-y-2 border-t-[3px] border-ink pt-3">
+            <ul className="space-y-2 border-t-2 border-ink pt-3">
               {shown.items.map((it) => {
                 const info = lastSummary(it.exercise_key, sets, sessions, now, match)
                 return (
@@ -248,7 +248,7 @@ export function Home({ sessions, sets, adjustments, overrides, bodyweight, onQuo
       </Card>
 
       {rampUp && (
-        <Card tone="baby" className="flex items-start gap-3">
+        <Card tone="info" className="flex items-start gap-3">
           <Flame className="mt-1 size-6 shrink-0" />
           <p className="text-lg">
             <strong>Wiedereinstieg:</strong> In den ersten {plan.ramp_up.weeks * 7} Tagen ein Satz weniger je Übung.

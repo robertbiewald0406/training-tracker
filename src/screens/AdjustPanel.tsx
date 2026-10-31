@@ -32,7 +32,7 @@ const TITLE: Record<AdjustAction, string> = {
   unten: 'Nach unten',
 }
 
-const pick = (selected: boolean) => `${selected ? 'bg-neon' : 'bg-card'}`
+const pick = (selected: boolean) => `${selected ? 'bg-mark' : 'bg-card'}`
 
 /** Auswahl fuer Tauschen, optional Grund und Kommentar, und "Nur heute" oder "Dauerhaft im Plan". */
 export function AdjustPanel({ action, exerciseName, choices, allowPermanent, busy, onConfirm, onCancel }: Props) {
@@ -48,7 +48,7 @@ export function AdjustPanel({ action, exerciseName, choices, allowPermanent, bus
       type="button"
       aria-pressed={to === k}
       onClick={() => setTo(k)}
-      className={`min-h-14 border-[3px] border-ink px-3 text-left text-lg ${pick(to === k)}`}
+      className={`min-h-14 border-2 border-ink px-3 text-left text-lg ${pick(to === k)}`}
     >
       {plan.exercises[k].name}
     </button>
@@ -83,7 +83,7 @@ export function AdjustPanel({ action, exerciseName, choices, allowPermanent, bus
               type="button"
               aria-pressed={grund === g.value}
               onClick={() => setGrund(grund === g.value ? null : g.value)}
-              className={`min-h-12 border-[3px] border-ink px-2 text-lg ${pick(grund === g.value)}`}
+              className={`min-h-12 border-2 border-ink px-2 text-lg ${pick(grund === g.value)}`}
             >
               {g.text}
             </button>
@@ -96,7 +96,7 @@ export function AdjustPanel({ action, exerciseName, choices, allowPermanent, bus
             value={note}
             maxLength={NOTE_MAX}
             onChange={(e) => setNote(e.target.value)}
-            className="mt-1 min-h-14 w-full border-[3px] border-ink bg-card px-3 text-lg"
+            className="mt-1 min-h-14 w-full border-2 border-ink bg-card px-3 text-lg"
           />
         </label>
       </div>

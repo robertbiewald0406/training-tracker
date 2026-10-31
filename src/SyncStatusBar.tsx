@@ -22,8 +22,8 @@ export function SyncStatusBar() {
           Sync
         </h2>
         <span
-          className={`border-[3px] border-ink px-2 font-display uppercase tracking-wider text-ink ${
-            s.online ? 'bg-ok' : 'bg-baby'
+          className={`border-2 border-ink px-2 font-display uppercase tracking-wider text-ink ${
+            s.online ? 'bg-ok' : 'bg-info'
           }`}
         >
           {s.online ? 'Online' : 'Offline'}
@@ -39,12 +39,12 @@ export function SyncStatusBar() {
         <p className="text-base">Zuletzt: {new Date(s.lastSyncAt).toLocaleTimeString('de-DE')}</p>
       )}
       {s.error && (
-        <p role="alert" className="border-[3px] border-ink bg-err px-3 py-2 text-white">
+        <p role="alert" className="border-2 border-ink bg-err px-3 py-2 text-white">
           Sync-Fehler: {s.error}
         </p>
       )}
       {s.held && (
-        <div role="alert" className="space-y-3 border-[3px] border-ink bg-baby px-3 py-3">
+        <div role="alert" className="space-y-3 border-2 border-ink bg-info px-3 py-3">
           <p>{s.held.text}</p>
           <Button onClick={() => void confirmHeldReconcile(supabase)} disabled={s.syncing}>
             Trotzdem abgleichen
