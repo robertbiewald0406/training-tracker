@@ -3,14 +3,12 @@ import { plan } from '../lib/plan'
 import {
   berlinWeekStart,
   buildWeekReport,
-  isBerlinSunday,
   latestReportWeek,
   shiftWeek,
   type ProgressRow,
 } from '../lib/report'
 import { fmtKg } from '../lib/stats'
 import type { LocalRow } from '../lib/types'
-import { Button } from '../ui/Button'
 import { Card } from '../ui/Card'
 import { Chevron, Trophy } from '../ui/icons'
 
@@ -55,13 +53,12 @@ function ProgressList({ rows }: { rows: ProgressRow[] }) {
 const MAX_BETTER = 3
 
 /**
- * "Deine Woche": Wochenbericht aus den lokalen Daten (Montag bis Sonntag, Europe/Berlin). Sonntags offen fuer die
- * laufende Woche, sonst eingeklappt fuer die letzte volle Woche. Frueher Wochen ueber die Pfeile.
+ * "Deine Woche": Wochenbericht aus den lokalen Daten (Montag bis Sonntag, Europe/Berlin), immer sichtbar. Sonntags die
+ * laufende Woche, sonst die letzte volle Woche. Fruehere Wochen ueber die Pfeile.
  */
 export function WeekReportCard({ sessions, sets, adjustments, bodyweight, now = new Date() }: Props) {
   const latest = useMemo(() => latestReportWeek(now), [now.toDateString()]) // eslint-disable-line react-hooks/exhaustive-deps
   const [week, setWeek] = useState<Date>(latest)
-  const [open, setOpen] = useState(isBerlinSunday(now))
   const first = useMemo(() => {
     const t = sessions.map((s) => new Date(s.started_at).getTime())
     return t.length ? berlinWeekStart(new Date(Math.min(...t))) : latest
@@ -73,15 +70,6 @@ export function WeekReportCard({ sessions, sets, adjustments, bodyweight, now = 
     () => buildWeekReport({ plan, sessions, sets, adjustments, bodyweight, weekStart: week }),
     [sessions, sets, adjustments, bodyweight, week],
   )
-
-  if (!open)
-    return (
-      <Card className="space-y-3">
-        <h2 className="text-2xl">Deine Woche</h2>
-        <p className="text-base">{r.label}</p>
-        <Button onClick={() => setOpen(true)}>Wochenbericht ansehen</Button>
-      </Card>
-    )
 
   const nav = (dir: -1 | 1, label: string, disabled: boolean) => (
     <button
@@ -99,14 +87,7 @@ export function WeekReportCard({ sessions, sets, adjustments, bodyweight, now = 
 
   return (
     <Card className="space-y-4" aria-label="Deine Woche">
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="text-2xl">Deine Woche</h2>
-        {!isBerlinSunday(now) && (
-          <button type="button" onClick={() => setOpen(false)} className="min-h-12 border-[3px] border-ink bg-card px-3 font-display text-base uppercase">
-            Zu
-          </button>
-        )}
-      </div>
+      <h2 className="text-2xl">Deine Woche</h2>
       <div className="flex items-center gap-2">
         {nav(-1, 'Frühere Woche', !canBack)}
         <p className="num min-w-0 flex-1 text-center text-lg leading-tight" aria-live="polite">

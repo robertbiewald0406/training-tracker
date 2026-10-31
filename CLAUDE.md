@@ -114,8 +114,8 @@ kommen aus lokalen Daten (offline), nur is_warmup = false zählt, links/rechts e
 ## Wochenbericht "Deine Woche"
 src/lib/report.ts (rein, offline), Karte src/screens/WeekReportCard.tsx auf der Startseite. Woche = Montag bis
 Sonntag in Europe/Berlin (`berlinWeekStart`, unabhängig von der Gerätezeit; Einheiten zählen nach started_at).
-Sonntags (Berlin) erscheint die Karte offen oben für die laufende Woche, sonst eingeklappt unten für die letzte
-volle Woche; über die Pfeile rückwirkend bis zur ersten Einheit.
+Die Karte ist immer offen sichtbar: sonntags (Berlin) oben für die laufende Woche, sonst unten auf der Startseite für
+die letzte volle Woche; über die Pfeile rückwirkend bis zur ersten Einheit.
 - Fortschritt: bestes geschätztes 1RM (Epley) der Woche aus Arbeitssätzen bis 10 Wdh. (`E1RM_MAX_REPS`, ohne
   Aufwärmen, Zeitübungen und zweites Segment) gegen den Schnitt der besten Wochenwerte der 4 Vorwochen
   (mind. 2 davon mit Daten, sonst "neu"). Abweichung unter 3 % (`STABLE_PCT`) = "stabil". Es zählt der tatsächlich
