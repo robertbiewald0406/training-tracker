@@ -66,6 +66,10 @@ B) Supabase > SQL Editor: Strg+V (die Zwischenablage enthaelt die zwei Vault-Zei
 Test spaeter: bash scripts/push-setup.sh test
 EOF
     ;;
+  deploy)
+    # Funktion erneut deployen (z. B. nach einer Aenderung), ohne neue Schluessel.
+    npx --yes supabase functions deploy weekly-push --no-verify-jwt --project-ref "$REF"
+    ;;
   vault-sql)
     # Legt die zwei Vault-Zeilen erneut in die Zwischenablage (Passwort aus der lokalen Datei), ohne neue Schluessel.
     [ -f "$SECRET_FILE" ] || { echo "Zuerst: bash scripts/push-setup.sh setup"; exit 1; }
@@ -80,7 +84,7 @@ select vault.create_secret('%s', 'weekly_push_secret');" "$URL" "$(cat "$SECRET_
     echo
     ;;
   *)
-    echo "Aufruf: bash scripts/push-setup.sh setup | test"
+    echo "Aufruf: bash scripts/push-setup.sh setup | deploy | vault-sql | test"
     exit 2
     ;;
 esac

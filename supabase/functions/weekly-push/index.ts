@@ -41,7 +41,9 @@ Deno.serve(async (req) => {
       .select('id, user_id, endpoint, p256dh, auth, last_week_sent')
     if (error) throw new Error(`Abos laden: ${error.message}`)
 
-    const result = { sent: 0, skipped: 0, removed: 0, failed: 0 }
+    const result = { sent: 0, skipped: 0, removed: 0, failed: 0, errors: [] as string[] }
+    // Fehlerursachen nur als Statuscode und kurze Meldung (nie Schluessel); die Antwort sieht nur, wer das Passwort kennt.
+    const note = (stage: string, detail: string) => result.errors.length < 5 && result.errors.push(`${stage}: ${detail}`.slice(0, 300))
     const byUser = new Map<string, NonNullable<typeof subs>>()
     for (const s of subs ?? []) byUser.set(s.user_id, [...(byUser.get(s.user_id) ?? []), s])
 
@@ -49,6 +51,7 @@ Deno.serve(async (req) => {
       const { data: report, error: rerr } = await db.rpc('weekly_report', { p_user: userId })
       if (rerr || !report) {
         result.failed += list.length
+        note('Bericht', rerr?.message ?? 'leer')
         continue
       }
       const r = report as WeeklyReport
@@ -68,7 +71,11 @@ Deno.serve(async (req) => {
           if (isGone((e as { statusCode?: number }).statusCode)) {
             await db.from('push_subscription').delete().eq('id', s.id)
             result.removed++
-          } else result.failed++
+          } else {
+            result.failed++
+            const err = e as { statusCode?: number; body?: string; message?: string }
+            note('Senden', `${err.statusCode ?? ''} ${err.body ?? err.message ?? ''}`.trim())
+          }
         }
       }
     }
