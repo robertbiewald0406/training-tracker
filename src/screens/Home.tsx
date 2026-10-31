@@ -26,6 +26,8 @@ import { Button } from '../ui/Button'
 import { Card } from '../ui/Card'
 import { Segmented } from '../ui/Segmented'
 import { Scene } from '../ui/Scene'
+import { isBerlinSunday } from '../lib/report'
+import { WeekReportCard } from './WeekReportCard'
 import { Check, DAY_ICONS, Flame } from '../ui/icons'
 import { epley, fmtKg, lastLog, daysBetween, weekAdjustments } from '../lib/stats'
 
@@ -58,6 +60,7 @@ interface HomeProps {
   sets: LocalRow<'workout_set'>[]
   adjustments: LocalRow<'session_adjustment'>[]
   overrides: LocalRow<'plan_override'>[]
+  bodyweight: LocalRow<'bodyweight'>[]
   onQuote: (p: PendingQuote) => void
 }
 
@@ -112,7 +115,7 @@ function WeekAdjustments({
   )
 }
 
-export function Home({ sessions, sets, adjustments, overrides, onQuote }: HomeProps) {
+export function Home({ sessions, sets, adjustments, overrides, bodyweight, onQuote }: HomeProps) {
   const now = new Date()
   const today = planDayForDate(now, plan)
   const rampUp = isRampUp(now, sessions, plan)
@@ -148,8 +151,12 @@ export function Home({ sessions, sets, adjustments, overrides, onQuote }: HomePr
   const Icon = DAY_ICONS[selected ? (selected.key as keyof typeof DAY_ICONS) : 'lauftag']
   const isToday = selected && today?.key === selected.key
 
+  const sunday = isBerlinSunday(now)
+  const report = <WeekReportCard sessions={sessions} sets={sets} adjustments={adjustments} bodyweight={bodyweight} now={now} />
+
   return (
     <>
+      {sunday && report}
       <Card className="p-3">
         <ul className="grid grid-cols-5 gap-2" aria-label="Diese Woche, Tag wählen">
           {week.map(({ day, done }) => {
@@ -249,6 +256,8 @@ export function Home({ sessions, sets, adjustments, overrides, onQuote }: HomePr
           </p>
         </Card>
       )}
+
+      {!sunday && report}
 
       <Scene inline />
     </>

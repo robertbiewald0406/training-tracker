@@ -291,4 +291,6 @@ export const MUSCLE_NAMES: Record<string, string> = {
   quads: 'Quadrizeps',
   hamstrings: 'Beinbeuger',
   calves: 'Waden',
+  adductors: 'Adduktoren',
+  abductors: 'Abduktoren',
 }
