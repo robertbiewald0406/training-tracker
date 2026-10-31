@@ -14,9 +14,11 @@ const STORE_LABEL: Record<StoreName, string> = {
   session: 'Einheiten',
   workout_set: 'Sätze',
   bodyweight: 'Körpergewicht',
+  session_adjustment: 'Anpassungen',
+  plan_override: 'Plan-Anpassungen',
 }
 // Reihenfolge beim Pull. Entfernen (nach vollstaendigem Pull) erst workout_set, dann session, dann bodyweight.
-const PULL_ORDER: StoreName[] = ['session', 'workout_set', 'bodyweight']
+const PULL_ORDER: StoreName[] = ['session', 'session_adjustment', 'workout_set', 'bodyweight', 'plan_override']
 
 export type BrakeReason = 'zero' | 'mass'
 
@@ -146,6 +148,10 @@ export async function pullAll(client: SupabaseClient, opts: { force?: boolean } 
     }
     const bw = ids.get('bodyweight')
     if (bw) result.removed += (await removeMissing('bodyweight', bw)).length
+    for (const store of ['session_adjustment', 'plan_override'] as const) {
+      const remoteIds = ids.get(store)
+      if (remoteIds) result.removed += (await removeMissing(store, remoteIds)).length
+    }
   } catch (e) {
     result.errors.push(`Abgleich: ${e instanceof Error ? e.message : String(e)}`)
   }

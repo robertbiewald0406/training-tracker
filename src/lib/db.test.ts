@@ -9,8 +9,8 @@ beforeEach(async () => {
   globalThis.indexedDB = new IDBFactory()
 })
 
-describe('IndexedDB-Upgrade v1 -> v2', () => {
-  it('erhaelt alle bestehenden Stores und Daten und legt meta an', async () => {
+describe('IndexedDB-Upgrade v1 -> v3', () => {
+  it('erhaelt alle bestehenden Stores und Daten und legt meta und die Anpassungs-Stores an', async () => {
     // Version 1 exakt wie ausgeliefert anlegen und befuellen.
     const v1 = await openDB('training-tracker', 1, {
       upgrade(db) {
@@ -28,9 +28,9 @@ describe('IndexedDB-Upgrade v1 -> v2', () => {
     await v1.put('bodyweight', { id: 'b1', measured_on: '2026-10-05', weight_kg: 80, _sync: 'pending', _v: 1 })
     v1.close()
 
-    const db = await getDb() // oeffnet mit Version 2 und fuehrt das Upgrade aus
-    expect(db.version).toBe(2)
-    expect([...db.objectStoreNames].sort()).toEqual(['bodyweight', 'meta', 'session', 'workout_set'])
+    const db = await getDb() // oeffnet mit Version 3 und fuehrt das Upgrade aus
+    expect(db.version).toBe(3)
+    expect([...db.objectStoreNames].sort()).toEqual(['bodyweight', 'meta', 'plan_override', 'session', 'session_adjustment', 'workout_set'])
     expect((await getAll('session')).map((r) => r.id)).toEqual(['s1'])
     const set = (await getAll('workout_set'))[0]
     expect(set).toMatchObject({ id: 'w1', weight_kg: 40, _sync: 'synced', _v: 2 })

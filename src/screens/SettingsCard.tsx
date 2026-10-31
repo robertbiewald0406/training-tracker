@@ -82,7 +82,8 @@ export function SettingsCard() {
       setInfo(
         `Importiert: ${a.session} ${a.session === 1 ? 'Einheit' : 'Einheiten'}, ${a.workout_set} ` +
           `${a.workout_set === 1 ? 'Satz' : 'Sätze'}, ${a.bodyweight} ` +
-          `${a.bodyweight === 1 ? 'Körpergewicht' : 'Körpergewichte'}. ` +
+          `${a.bodyweight === 1 ? 'Körpergewicht' : 'Körpergewichte'}` +
+          `${a.session_adjustment + a.plan_override > 0 ? `, ${a.session_adjustment + a.plan_override} Anpassungen` : ''}. ` +
           'Die Daten werden jetzt mit Supabase synchronisiert.',
       )
       await refreshPending()
@@ -139,6 +140,7 @@ export function SettingsCard() {
               {p.sessions} {p.sessions === 1 ? 'neue Einheit' : 'neue Einheiten'}, {p.sets}{' '}
               {p.sets === 1 ? 'neuer Satz' : 'neue Sätze'}, {p.bodyweights}{' '}
               {p.bodyweights === 1 ? 'Körpergewicht' : 'Körpergewichte'}
+              {p.adjustments > 0 && `, ${p.adjustments} ${p.adjustments === 1 ? 'Anpassung' : 'Anpassungen'}`}
             </strong>
             .
           </p>
@@ -146,7 +148,7 @@ export function SettingsCard() {
           <p className="text-base">Der Import fügt nur hinzu und überschreibt nichts.</p>
           <Button
             variant="primary"
-            disabled={busy || p.sessions + p.sets + p.bodyweights === 0}
+            disabled={busy || p.sessions + p.sets + p.bodyweights + p.adjustments === 0}
             onClick={() => void confirmImport()}
           >
             Importieren

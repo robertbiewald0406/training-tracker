@@ -29,12 +29,42 @@ export interface BodyweightRow {
   weight_kg: number
 }
 
-export type StoreName = 'session' | 'workout_set' | 'bodyweight'
+export type AdjustTyp = 'auslassen' | 'tauschen' | 'reihenfolge'
+export type AdjustGrund = 'schmerz' | 'geraet_belegt' | 'zeit' | 'anderes'
+
+/** Anpassung einer Einheit: Uebung ausgelassen, getauscht oder in der Reihenfolge verschoben. */
+export interface SessionAdjustmentRow {
+  id: string
+  session_id: string
+  typ: AdjustTyp
+  original_key: string
+  neuer_key: string | null // nur bei 'tauschen'
+  position: number | null // nur bei 'reihenfolge': Zielposition in der Tagesliste (0-basiert)
+  grund: AdjustGrund | null
+  note: string | null // hoechstens 200 Zeichen
+  dauerhaft: boolean // zusaetzlich als plan_override gespeichert
+  logged_at: string
+}
+
+/** Dauerhafte Anpassung eines Plan-Tags, wird beim Laden ueber plan.json gelegt. */
+export interface PlanOverrideRow {
+  id: string
+  day_key: string // Plan-Tag (ohne Variante), z. B. mi_beine
+  typ: AdjustTyp
+  exercise_key: string
+  neuer_key: string | null
+  position: number | null
+  created_at: string
+}
+
+export type StoreName = 'session' | 'workout_set' | 'bodyweight' | 'session_adjustment' | 'plan_override'
 
 export interface RowByStore {
   session: SessionRow
   workout_set: WorkoutSetRow
   bodyweight: BodyweightRow
+  session_adjustment: SessionAdjustmentRow
+  plan_override: PlanOverrideRow
 }
 
 export type SyncState = 'pending' | 'synced'

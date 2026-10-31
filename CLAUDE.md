@@ -10,7 +10,7 @@
   src/lib/pull.ts): Entfernen von > BRAKE_MIN_ROWS Zeilen und > BRAKE_MAX_FRACTION der lokal synchronisierten,
   oder 0 Zeilen vom Server bei vorhandenen lokalen Zeilen, hält an und braucht Bestätigung. pending und
   Tombstones werden nie entfernt.
-- IndexedDB-Upgrades sind rein additiv (aktuell Version 2, Store `meta` nur lokal, nie synchronisiert).
+- IndexedDB-Upgrades sind rein additiv (aktuell Version 3, Store `meta` nur lokal, nie synchronisiert).
 - Alle IDs sind client-seitige UUIDs (crypto.randomUUID()).
 - Neue Tabellen: RLS + Policy user_id = auth.uid() + explizites grant to authenticated, nie an anon.
 - Im Frontend nur der Publishable Key (VITE_SUPABASE_PUBLISHABLE_KEY). Secret/service_role Key
@@ -23,6 +23,8 @@ Hosting: GitHub Pages über GitHub Actions (Vite `base` auf den Repo-Namen).
 
 ## Supabase
 - Schema liegt in supabase/schema.sql und ist bereits eingespielt (Tabellen: session, workout_set, bodyweight).
+  Spätere Änderungen liegen als Datei in supabase/migrations/ und werden vom Besitzer im SQL Editor ausgeführt
+  (002: session_adjustment, plan_override).
 - Ein einziger Nutzer (der Besitzer), Login mit E-Mail + Passwort.
 - Sign-up in der App nicht anbieten, nur Login.
 
@@ -52,6 +54,27 @@ Hosting: GitHub Pages über GitHub Actions (Vite `base` auf den Repo-Namen).
 - Wiedereinstieg: ramp_up in plan.json. `weeks` > 0: so viele Wochen ab der ersten Session ein Satz weniger
   je Übung (mind. `min_sets`), dazu der Hinweis "Nicht bis Versagen empfohlen". `weeks` = 0: aus, immer die
   volle Satzzahl, der Hinweis erscheint nirgends. Aktuell 0.
+
+## Anpassungen in der Einheit
+- Übungsansicht: Tauschen (Alternativen zuerst, dann Katalog ohne retired und ohne Übungen des Tages), Nach oben,
+  Nach unten, Auslassen (src/screens/AdjustPanel.tsx, Logik src/lib/adjust.ts). Je Aktion optional Grund
+  (schmerz, geraet_belegt, zeit, anderes) und Kommentar (max. 200 Zeichen), dazu "Nur heute" oder "Dauerhaft im Plan".
+- Jede Aktion = Zeile in `session_adjustment` (typ auslassen/tauschen/reihenfolge, original_key, neuer_key, position,
+  dauerhaft). "Dauerhaft" legt zusätzlich eine Zeile in `plan_override` (day_key ohne Variante, typ, exercise_key,
+  neuer_key, position) an. plan.json bleibt unverändert; `effectiveDay` legt plan_override (nach created_at) und die
+  "Nur heute"-Zeilen der Einheit (dauerhaft = false, nach logged_at) über den Tag. Positionen beziehen sich auf die
+  Liste der Variante zum Zeitpunkt der Anpassung.
+- Die gemerkte Position der laufenden Einheit wird per `remapPosition` über die Übungs-Keys nachgezogen. Sätze einer
+  ausgelassenen oder getauschten Übung gehören zu keiner Position mehr (assign = -1), bleiben gespeichert und zählen
+  in der Statistik. Fortschritt und Vorbelegung laufen über den tatsächlich genutzten Key.
+- Beide Tabellen: offline-first (Stores `session_adjustment`, `plan_override`), Sync-Reihenfolge session,
+  session_adjustment, workout_set, bodyweight, plan_override; Pull, Tombstones, Schutzbremse wie bei den anderen.
+  Eine fehlende Einheit nimmt ihre synchronisierten Anpassungen mit, pending Anpassungen halten sie als Konflikt.
+- Backup: `session_adjustment` und `plan_override` sind optionale Felder (Formatversion bleibt 1, alte Backups
+  importierbar, strenge Prüfung wie bei Sätzen).
+- Einstellungen (Tab Mehr): "Dauerhafte Anpassungen" mit "Zurücksetzen" je Anpassung (Tombstone auf plan_override).
+- Statistik zählt nur tatsächlich gespeicherte Sätze. Die Wochenleiste auf der Startseite markiert Tage mit
+  ausgelassenen oder getauschten Übungen (`weekAdjustments` in src/lib/stats.ts) und listet sie mit Grund.
 
 ## Datenregeln
 - Zweites Segment je Satz (Dropsatz, Aufstocksatz, Backoff-Satz; Schalter im Satz-Editor, öffnet Gewicht und

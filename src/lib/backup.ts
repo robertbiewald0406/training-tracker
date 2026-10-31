@@ -10,6 +10,7 @@ import {
   type BackupRows,
 } from './db'
 import { plan } from './plan'
+import type { AdjustGrund, AdjustTyp } from './types'
 
 export { BACKUP_FORMAT, BACKUP_VERSION }
 export const LAST_EXPORT_KEY = 'backup:lastExport' // lokaler Store meta, nie synchronisiert
@@ -76,7 +77,7 @@ export async function exportBackup(env: ShareEnv = browserEnv(), now: Date = new
     env.download(file)
   }
   if (how !== 'cancelled') await setMeta(LAST_EXPORT_KEY, now.toISOString())
-  return { how, fileName: file.name, counts: { session: data.session.length, workout_set: data.workout_set.length, bodyweight: data.bodyweight.length } }
+  return { how, fileName: file.name, counts: { session: data.session.length, workout_set: data.workout_set.length, bodyweight: data.bodyweight.length, session_adjustment: data.session_adjustment.length, plan_override: data.plan_override.length } }
 }
 
 export const getLastExport = () => getMeta<string>(LAST_EXPORT_KEY)
@@ -85,6 +86,8 @@ export const getLastExport = () => getMeta<string>(LAST_EXPORT_KEY)
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const SIDES = ['left', 'right', 'both']
+const ADJUST_TYPES = ['auslassen', 'tauschen', 'reihenfolge']
+const ADJUST_GRUENDE = ['schmerz', 'geraet_belegt', 'zeit', 'anderes']
 
 export type ParseResult =
   | { ok: true; rows: BackupRows; exportedAt: string | null }
@@ -129,9 +132,12 @@ export function parseBackup(text: string, localSessionIds: Set<string> = new Set
     }
   for (const k of ['session', 'workout_set', 'bodyweight'] as const)
     if (!Array.isArray(raw[k])) err(`Feld "${k}" fehlt oder ist keine Liste.`)
+  // Aeltere Backups kennen die Anpassungen noch nicht: fehlt das Feld, ist es leer. Vorhanden muss es eine Liste sein.
+  for (const k of ['session_adjustment', 'plan_override'] as const)
+    if (raw[k] !== undefined && !Array.isArray(raw[k])) err(`Feld "${k}" ist keine Liste.`)
   if (errors.length) return { ok: false, errors }
 
-  const rows: BackupRows = { session: [], workout_set: [], bodyweight: [] }
+  const rows: BackupRows = { session: [], workout_set: [], bodyweight: [], session_adjustment: [], plan_override: [] }
   const seen = new Set<string>()
   const checkId = (e: Record<string, unknown>, where: string) => {
     if (typeof e.id !== 'string' || !UUID.test(e.id)) return err(`${where}.id: keine gültige UUID.`), false
@@ -203,6 +209,64 @@ export function parseBackup(text: string, localSessionIds: Set<string> = new Set
     if (ok) rows.bodyweight.push({ id: e.id as string, measured_on: e.measured_on as string, weight_kg: e.weight_kg as number })
   })
 
+  ;((raw.session_adjustment as unknown[] | undefined) ?? []).forEach((e, i) => {
+    const w = `session_adjustment[${i}]`
+    if (!isObj(e)) return void err(`${w}: kein Objekt.`)
+    let ok = checkId(e, w)
+    if (typeof e.session_id !== 'string' || !UUID.test(e.session_id)) ok = (err(`${w}.session_id: keine gültige UUID.`), false)
+    else if (!sessionIds.has(e.session_id)) ok = (err(`${w}.session_id: verweist auf eine unbekannte Einheit.`), false)
+    if (typeof e.typ !== 'string' || !ADJUST_TYPES.includes(e.typ)) ok = (err(`${w}.typ: auslassen, tauschen oder reihenfolge erwartet.`), false)
+    if (typeof e.original_key !== 'string' || !(e.original_key in plan.exercises)) ok = (err(`${w}.original_key: unbekannte Übung.`), false)
+    if (e.neuer_key != null && (typeof e.neuer_key !== 'string' || !(e.neuer_key in plan.exercises)))
+      ok = (err(`${w}.neuer_key: unbekannte Übung.`), false)
+    if (e.typ === 'tauschen' && e.neuer_key == null) ok = (err(`${w}.neuer_key: fehlt beim Tauschen.`), false)
+    if (e.position != null && !isInt(e.position, 0, 99)) ok = (err(`${w}.position: leer oder ganze Zahl 0–99 erwartet.`), false)
+    if (e.typ === 'reihenfolge' && e.position == null) ok = (err(`${w}.position: fehlt bei der Reihenfolge.`), false)
+    if (e.grund != null && (typeof e.grund !== 'string' || !ADJUST_GRUENDE.includes(e.grund)))
+      ok = (err(`${w}.grund: ungültig.`), false)
+    if (e.note != null && (typeof e.note !== 'string' || e.note.length > 200)) ok = (err(`${w}.note: höchstens 200 Zeichen.`), false)
+    if (typeof e.dauerhaft !== 'boolean') ok = (err(`${w}.dauerhaft: true/false erwartet.`), false)
+    if (!isIso(e.logged_at)) ok = (err(`${w}.logged_at: kein gültiger Zeitpunkt.`), false)
+    if (ok)
+      rows.session_adjustment.push({
+        id: e.id as string,
+        session_id: e.session_id as string,
+        typ: e.typ as AdjustTyp,
+        original_key: e.original_key as string,
+        neuer_key: (e.neuer_key as string | null | undefined) ?? null,
+        position: (e.position as number | null | undefined) ?? null,
+        grund: (e.grund as AdjustGrund | null | undefined) ?? null,
+        note: (e.note as string | null | undefined) ?? null,
+        dauerhaft: e.dauerhaft as boolean,
+        logged_at: e.logged_at as string,
+      })
+  })
+
+  ;((raw.plan_override as unknown[] | undefined) ?? []).forEach((e, i) => {
+    const w = `plan_override[${i}]`
+    if (!isObj(e)) return void err(`${w}: kein Objekt.`)
+    let ok = checkId(e, w)
+    if (typeof e.day_key !== 'string' || !plan.days.some((d) => d.key === e.day_key)) ok = (err(`${w}.day_key: unbekannter Tag.`), false)
+    if (typeof e.typ !== 'string' || !ADJUST_TYPES.includes(e.typ)) ok = (err(`${w}.typ: auslassen, tauschen oder reihenfolge erwartet.`), false)
+    if (typeof e.exercise_key !== 'string' || !(e.exercise_key in plan.exercises)) ok = (err(`${w}.exercise_key: unbekannte Übung.`), false)
+    if (e.neuer_key != null && (typeof e.neuer_key !== 'string' || !(e.neuer_key in plan.exercises)))
+      ok = (err(`${w}.neuer_key: unbekannte Übung.`), false)
+    if (e.typ === 'tauschen' && e.neuer_key == null) ok = (err(`${w}.neuer_key: fehlt beim Tauschen.`), false)
+    if (e.position != null && !isInt(e.position, 0, 99)) ok = (err(`${w}.position: leer oder ganze Zahl 0–99 erwartet.`), false)
+    if (e.typ === 'reihenfolge' && e.position == null) ok = (err(`${w}.position: fehlt bei der Reihenfolge.`), false)
+    if (!isIso(e.created_at)) ok = (err(`${w}.created_at: kein gültiger Zeitpunkt.`), false)
+    if (ok)
+      rows.plan_override.push({
+        id: e.id as string,
+        day_key: e.day_key as string,
+        typ: e.typ as AdjustTyp,
+        exercise_key: e.exercise_key as string,
+        neuer_key: (e.neuer_key as string | null | undefined) ?? null,
+        position: (e.position as number | null | undefined) ?? null,
+        created_at: e.created_at as string,
+      })
+  })
+
   if (errors.length) return { ok: false, errors }
   return { ok: true, rows, exportedAt: typeof raw.exported_at === 'string' ? raw.exported_at : null }
 }
@@ -213,17 +277,20 @@ export interface ImportPreview {
   sessions: number
   sets: number
   bodyweights: number
+  adjustments: number // Anpassungen der Einheiten und dauerhafte Plan-Anpassungen
   skipped: number // bereits vorhanden (gleiche Id oder gleicher Tag), werden nicht angefasst
 }
 
 /** Zaehlt, was der Import tatsaechlich hinzufuegen wuerde. Schreibt nichts. */
 export async function previewImport(rows: BackupRows): Promise<ImportPreview> {
   const have = await existingKeys()
-  const p: ImportPreview = { sessions: 0, sets: 0, bodyweights: 0, skipped: 0 }
+  const p: ImportPreview = { sessions: 0, sets: 0, bodyweights: 0, adjustments: 0, skipped: 0 }
   for (const r of rows.session) have.session.has(r.id) ? p.skipped++ : p.sessions++
   for (const r of rows.workout_set) have.workout_set.has(r.id) ? p.skipped++ : p.sets++
   for (const r of rows.bodyweight)
     have.bodyweight.has(r.id) || have.bodyweightDates.has(r.measured_on) ? p.skipped++ : p.bodyweights++
+  for (const r of rows.session_adjustment) have.session_adjustment.has(r.id) ? p.skipped++ : p.adjustments++
+  for (const r of rows.plan_override) have.plan_override.has(r.id) ? p.skipped++ : p.adjustments++
   return p
 }
 

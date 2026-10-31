@@ -10,7 +10,7 @@ import { Workout } from './Workout'
 
 /** Offene Einheit (ended_at = null) -> Workout (Wiederaufnahme), sonst Startseite. */
 export function Logger() {
-  const { sessions, sets, loaded } = useLocalData()
+  const { sessions, sets, adjustments, overrides, loaded } = useLocalData()
   // Nur im Speicher: nach einem Neuladen (Wiederaufnahme) gibt es kein Zitat mehr.
   const [pending, setPending] = useState<PendingQuote | null>(null)
   // Beim Start: gemerkte Positionen ohne lokale (offene) Session verwerfen.
@@ -20,8 +20,8 @@ export function Logger() {
   }, [loaded])
   if (!loaded) return null
   const active = activeSession(sessions, plan)
-  if (!active) return <Home sessions={sessions} sets={sets} onQuote={setPending} />
+  if (!active) return <Home sessions={sessions} sets={sets} adjustments={adjustments} overrides={overrides} onQuote={setPending} />
   const quote = quoteToShow(active.id, pending)
   if (quote) return <QuoteCard quote={quote} onGo={() => setPending(null)} />
-  return <Workout key={active.id} session={active} sessions={sessions} sets={sets} />
+  return <Workout key={active.id} session={active} sessions={sessions} sets={sets} adjustments={adjustments} overrides={overrides} />
 }

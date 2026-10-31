@@ -6,6 +6,7 @@ import { Button } from './ui/Button'
 import { AppLayout } from './ui/AppLayout'
 import { Logger } from './screens/Logger'
 import { SettingsCard } from './screens/SettingsCard'
+import { PlanOverridesCard } from './screens/PlanOverridesCard'
 import { Dashboard } from './screens/Dashboard'
 import { TabBar, type Tab } from './ui/TabBar'
 import { useLocalData } from './lib/useLocalData'
@@ -50,6 +51,7 @@ function Shell() {
         <>
           <h1 className="text-3xl">Mehr</h1>
           <SyncStatusBar />
+          <PlanOverridesCard />
           <SettingsCard />
           {import.meta.env.DEV && <DevTools />}
           <Button onClick={signOut}>Abmelden</Button>

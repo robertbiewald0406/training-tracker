@@ -4,7 +4,7 @@ import { deleteLocal, getAll, getDb, resetDbHandle, saveLocal } from './db'
 import { AUTH_EXPIRED_MESSAGE, BRAKE_MAX_FRACTION, BRAKE_MIN_ROWS, PAGE, pullAll, reconcileBrake } from './pull'
 import { confirmHeldReconcile, getSyncStatus, syncNow } from './sync'
 
-type Tables = Record<'session' | 'workout_set' | 'bodyweight', any[]>
+type Tables = Record<'session' | 'workout_set' | 'bodyweight' | 'session_adjustment' | 'plan_override', any[]>
 
 interface Opts {
   cap?: number // Server liefert hoechstens so viele Zeilen pro Abfrage (z. B. Projekt-Limit)
@@ -81,7 +81,7 @@ const set = (session_id: string, over: any = {}) => ({
   rir: null, is_warmup: false, side: 'both', logged_at: '2026-10-05T10:05:00Z', note: null, ...over,
 })
 const bw = (over: any = {}) => ({ id: id(), user_id: 'u', measured_on: '2026-10-05', weight_kg: 80, ...over })
-const empty = (): Tables => ({ session: [], workout_set: [], bodyweight: [] })
+const empty = (): Tables => ({ session: [], workout_set: [], bodyweight: [], session_adjustment: [], plan_override: [] })
 const strip = ({ user_id: _u, ...r }: any) => r // so speichert saveLocal (ohne user_id)
 
 /** Lokale Zeile, die als synchronisiert gilt (wie nach einem Upload). */
@@ -108,15 +108,15 @@ describe('Pull', () => {
     const r = await pullAll(client)
 
     expect(r.errors).toEqual([])
-    expect(r.completed).toEqual(['session', 'workout_set', 'bodyweight'])
+    expect(r.completed).toEqual(['session', 'session_adjustment', 'workout_set', 'bodyweight', 'plan_override'])
     expect((await getAll('session')).length).toBe(1)
     expect((await getAll('workout_set')).length).toBe(3)
     expect((await getAll('bodyweight')).length).toBe(1)
     expect((await getAll('workout_set')).every((x) => x._sync === 'synced')).toBe(true)
     expect(Object.keys((await getAll('session'))[0])).not.toContain('user_id')
-    // Reihenfolge der Tabellen: session, workout_set, bodyweight
+    // Reihenfolge der Tabellen: Einheiten zuerst (Fremdschluessel), dann Anpassungen, Saetze, Koerpergewicht, Plan
     const order = [...new Set(log.map((l) => l.split(':')[1]))]
-    expect(order).toEqual(['session', 'workout_set', 'bodyweight'])
+    expect(order).toEqual(['session', 'session_adjustment', 'workout_set', 'bodyweight', 'plan_override'])
   })
 
   it('neue Zeilen werden uebernommen, vorhandene bleiben', async () => {
@@ -234,7 +234,7 @@ describe('Pull', () => {
     expect(r.errors[0]).toBe('session laden: Netzwerk weg')
     expect(await getAll('session')).toHaveLength(1)
     // Einheiten-Pull unvollstaendig: Saetze duerfen trotzdem nur wegen ihrer eigenen Tabelle entfernt werden
-    expect(r.completed).toEqual(['workout_set', 'bodyweight'])
+    expect(r.completed).toEqual(['session_adjustment', 'workout_set', 'bodyweight', 'plan_override'])
   })
 
   it('mehr als 1000 Zeilen: seitenweise bis alles da ist', async () => {

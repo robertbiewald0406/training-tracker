@@ -1,7 +1,8 @@
 import type { Plan } from './plan'
 import { parseSegment } from './segments'
 import type { BodyweightRow, Side, WorkoutSetRow } from './types'
-import { weekStart } from './logger'
+import { planDayForKey, weekStart } from './logger'
+import type { SessionAdjustmentRow } from './types'
 
 // Reine Auswertungen fuer Dashboard und Vergleich "Letztes Mal". Keine Seiteneffekte, nur lokale Daten.
 
@@ -30,6 +31,45 @@ const work = (s: WorkoutSetRow) => !s.is_warmup
 /** Anzahl harter Saetze: Aufwaermsaetze zaehlen nicht, links/rechts desselben Satzes zaehlen einmal. */
 export function hardSetCount(sets: WorkoutSetRow[]): number {
   return new Set(sets.filter(work).map((s) => `${s.session_id}|${s.exercise_key}|${s.set_no}`)).size
+}
+
+export interface DayAdjustments {
+  skipped: number
+  swapped: number
+}
+
+/**
+ * Ausgelassene und getauschte Uebungen je Plan-Tag (Schluessel = Tag ohne Variante) in der Woche, die `weeksAgo`
+ * Wochen vor der aktuellen beginnt. Grundlage der Markierung in der Wochenleiste. Verschieben zaehlt nicht.
+ */
+export function weekAdjustments(
+  adjustments: SessionAdjustmentRow[],
+  sessions: (SessionLike & { day_key: string })[],
+  plan: Plan,
+  now: Date,
+  weeksAgo = 0,
+): Record<string, DayAdjustments> {
+  const start = new Date(weekStart(now).getTime() - weeksAgo * 7 * DAY_MS)
+  const end = new Date(start)
+  end.setDate(end.getDate() + 7)
+  const inWeek = new Map(
+    sessions
+      .filter((s) => {
+        const t = new Date(s.started_at).getTime()
+        return t >= start.getTime() && t < end.getTime()
+      })
+      .map((s) => [s.id, s]),
+  )
+  const out: Record<string, DayAdjustments> = {}
+  for (const a of adjustments) {
+    const s = inWeek.get(a.session_id)
+    const day = s && planDayForKey(s.day_key, plan)
+    if (!day || a.typ === 'reihenfolge') continue
+    const cur = (out[day.key] ??= { skipped: 0, swapped: 0 })
+    if (a.typ === 'auslassen') cur.skipped++
+    else cur.swapped++
+  }
+  return out
 }
 
 export const volumeOf = (sets: WorkoutSetRow[]) =>

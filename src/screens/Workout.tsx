@@ -12,7 +12,7 @@ import {
   weightUnit,
   isTimed,
   repsUnit,
-  resolveSessionDay,
+  planDayForKey,
   startValues,
   variantMatch,
   variantOfKey,
@@ -21,6 +21,16 @@ import {
   setsFor,
   type Position,
 } from '../lib/logger'
+import {
+  buildAdjustment,
+  buildOverride,
+  effectiveDay,
+  effectiveSessionDay,
+  moveTarget,
+  remapPosition,
+  swapChoices,
+  withFullAssign,
+} from '../lib/adjust'
 import { plan } from '../lib/plan'
 import { supabase } from '../lib/supabase'
 import { lastLog } from '../lib/stats'
@@ -32,7 +42,8 @@ import { Button } from '../ui/Button'
 import { Card } from '../ui/Card'
 import { RestTimer } from '../ui/RestTimer'
 import { SetProgress } from '../ui/SetProgress'
-import { Check, Chevron, DAY_ICONS, Flame, Trophy } from '../ui/icons'
+import { ArrowDown, ArrowUp, Check, Chevron, DAY_ICONS, Flame, Trophy } from '../ui/icons'
+import { AdjustPanel, type AdjustAction, type AdjustChoice } from './AdjustPanel'
 import { LastTime } from './LastTime'
 import { SetEditor, type SetValues } from './SetEditor'
 import { Warning } from '../ui/Warning'
@@ -41,13 +52,16 @@ interface Props {
   session: LocalRow<'session'>
   sessions: LocalRow<'session'>[]
   sets: LocalRow<'workout_set'>[]
+  adjustments: LocalRow<'session_adjustment'>[]
+  overrides: LocalRow<'plan_override'>[]
 }
 
 const kg = (n: number) => String(n).replace('.', ',')
 const SIDE_TEXT = { left: 'links', right: 'rechts', both: '' } as const
 
-export function Workout({ session, sessions, sets }: Props) {
-  const day = resolveSessionDay(session.day_key, plan)!
+export function Workout({ session, sessions, sets, adjustments, overrides }: Props) {
+  // Wirksamer Tag: Plan + dauerhafte Anpassungen + "nur heute"-Anpassungen dieser Einheit.
+  const day = effectiveSessionDay(session, plan, overrides, adjustments)!
   const variant = variantOfKey(session.day_key, plan)
   const match = variantMatch(variant, sessions, plan)
   const rampUp = useMemo(() => isRampUp(new Date(), sessions, plan), [sessions])
@@ -56,6 +70,7 @@ export function Workout({ session, sessions, sets }: Props) {
   const [editing, setEditing] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [panel, setPanel] = useState<string | null>(null) // "<idx>:cue" | "<idx>:alt"
+  const [adjust, setAdjust] = useState<AdjustAction | null>(null)
   useWakeLock(true)
   // Wiederaufnahme ohne Start-Tap: Audio beim ersten Tap freischalten.
   useEffect(() => {
@@ -228,6 +243,49 @@ export function Workout({ session, sessions, sets }: Props) {
     }
   }
 
+  /** Tauschen, Reihenfolge, Auslassen: Anpassung speichern (nur heute und/oder dauerhaft) und die Position nachziehen. */
+  async function adjustExercise(action: AdjustAction, c: AdjustChoice) {
+    if (!pos) return
+    const planDay = planDayForKey(session.day_key, plan)!
+    const key = item.exercise_key
+    const typ = action === 'oben' || action === 'unten' ? 'reihenfolge' : action
+    // Dauerhaft: Position bezieht sich auf die Liste ohne "nur heute"-Anpassungen (Plan + dauerhafte), sonst auf die laufende.
+    const permItems = effectiveDay(planDay, variant, plan, overrides).items
+    const basis = c.dauerhaft ? permItems : day.items
+    const position = typ === 'reihenfolge' ? moveTarget(basis, key, action === 'oben' ? 'up' : 'down') : null
+    if (typ === 'reihenfolge' && position === null) return
+    const row = buildAdjustment({
+      sessionId: session.id,
+      typ,
+      original_key: key,
+      neuer_key: c.neuer_key,
+      position,
+      grund: c.grund,
+      note: c.note,
+      dauerhaft: c.dauerhaft,
+    })
+    const override = c.dauerhaft
+      ? buildOverride({ dayKey: planDay.key, typ, exercise_key: key, neuer_key: c.neuer_key, position })
+      : null
+    const nextDay = effectiveDay(
+      planDay,
+      variant,
+      plan,
+      override ? [...overrides, override] : overrides,
+      override ? adjustments.filter((a) => a.session_id === session.id) : [...adjustments.filter((a) => a.session_id === session.id), row],
+    )
+    setBusy(true)
+    try {
+      update(remapPosition(withFullAssign(pos, day, plan, sets, session.id), day.items, nextDay.items, c.neuer_key ?? undefined))
+      setPanel(null)
+      setAdjust(null)
+      await saveAndSync(supabase, 'session_adjustment', row)
+      if (override) await saveAndSync(supabase, 'plan_override', override)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function removeLast() {
     if (!lastSet) return
     if (!window.confirm('Letzten Satz löschen? Er wird auch in Supabase gelöscht.')) return
@@ -310,7 +368,44 @@ export function Workout({ session, sessions, sets }: Props) {
             ))}
           </div>
         )}
+        <div className="grid grid-cols-2 gap-2" role="group" aria-label="Übung anpassen">
+          {(
+            [
+              { id: 'tauschen', text: 'Tauschen', icon: null, off: false },
+              { id: 'auslassen', text: 'Auslassen', icon: null, off: false },
+              { id: 'oben', text: 'Nach oben', icon: <ArrowUp className="size-5" />, off: moveTarget(day.items, item.exercise_key, 'up') === null },
+              { id: 'unten', text: 'Nach unten', icon: <ArrowDown className="size-5" />, off: moveTarget(day.items, item.exercise_key, 'down') === null },
+            ] as const
+          ).map((b) => (
+            <button
+              key={b.id}
+              type="button"
+              disabled={b.off || busy}
+              aria-pressed={adjust === b.id}
+              onClick={() => setAdjust(adjust === b.id ? null : b.id)}
+              className={`flex min-h-12 items-center justify-center gap-1 border-[3px] border-ink font-display text-base uppercase tracking-wide text-ink disabled:bg-card disabled:text-[#6b5b8c] ${
+                adjust === b.id ? 'bg-baby' : 'bg-card'
+              }`}
+            >
+              {b.icon}
+              {b.text}
+            </button>
+          ))}
+        </div>
       </Card>
+
+      {adjust && (
+        <AdjustPanel
+          key={`${adjust}:${item.exercise_key}`}
+          action={adjust}
+          exerciseName={plan.exercises[item.exercise_key].name}
+          choices={swapChoices(plan, day.items, item.exercise_key)}
+          allowPermanent={effectiveDay(planDayForKey(session.day_key, plan)!, variant, plan, overrides).items.some((i) => i.exercise_key === item.exercise_key)}
+          busy={busy}
+          onConfirm={(c) => void adjustExercise(adjust, c)}
+          onCancel={() => setAdjust(null)}
+        />
+      )}
 
       <LastTime key={chosenKey} log={prev} current={done} />
 

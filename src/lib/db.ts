@@ -1,7 +1,7 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb'
 import type { LocalRow, RowByStore, StoreName } from './types'
 
-export const DB_VERSION = 2
+export const DB_VERSION = 3
 
 interface Schema extends DBSchema {
   session: { key: string; value: LocalRow<'session'>; indexes: { by_sync: string } }
@@ -15,11 +15,17 @@ interface Schema extends DBSchema {
     value: LocalRow<'bodyweight'>
     indexes: { by_sync: string; by_date: string }
   }
+  session_adjustment: {
+    key: string
+    value: LocalRow<'session_adjustment'>
+    indexes: { by_sync: string; by_session: string }
+  }
+  plan_override: { key: string; value: LocalRow<'plan_override'>; indexes: { by_sync: string } }
   // Nur lokal, wird nie synchronisiert (z. B. Position in der laufenden Einheit).
   meta: { key: string; value: { key: string; value: unknown } }
 }
 
-const STORES: StoreName[] = ['session', 'workout_set', 'bodyweight']
+const STORES: StoreName[] = ['session', 'workout_set', 'bodyweight', 'session_adjustment', 'plan_override']
 
 let dbPromise: Promise<IDBPDatabase<Schema>> | null = null
 
@@ -38,6 +44,12 @@ export function getDb() {
       }
       if (oldVersion < 2) {
         db.createObjectStore('meta', { keyPath: 'key' })
+      }
+      if (oldVersion < 3) {
+        const adj = db.createObjectStore('session_adjustment', { keyPath: 'id' })
+        adj.createIndex('by_sync', '_sync')
+        adj.createIndex('by_session', 'session_id')
+        db.createObjectStore('plan_override', { keyPath: 'id' }).createIndex('by_sync', '_sync')
       }
     },
   })
@@ -196,6 +208,8 @@ export async function exportAll() {
       .map(strip)
       .sort(by((x: any) => `${x.logged_at}|${String(x.set_no).padStart(6, '0')}`)),
     bodyweight: (await getAll('bodyweight')).map(strip).sort(by((x: any) => x.measured_on)),
+    session_adjustment: (await getAll('session_adjustment')).map(strip).sort(by((x: any) => x.logged_at)),
+    plan_override: (await getAll('plan_override')).map(strip).sort(by((x: any) => x.created_at)),
   }
 }
 
@@ -206,6 +220,8 @@ export async function existingKeys() {
     session: new Set((await db.getAllKeys('session')) as string[]),
     workout_set: new Set((await db.getAllKeys('workout_set')) as string[]),
     bodyweight: new Set((await db.getAllKeys('bodyweight')) as string[]),
+    session_adjustment: new Set((await db.getAllKeys('session_adjustment')) as string[]),
+    plan_override: new Set((await db.getAllKeys('plan_override')) as string[]),
     bodyweightDates: new Set((await db.getAll('bodyweight')).map((r) => r.measured_on)),
   }
 }
@@ -214,6 +230,8 @@ export interface BackupRows {
   session: RowByStore['session'][]
   workout_set: RowByStore['workout_set'][]
   bodyweight: RowByStore['bodyweight'][]
+  session_adjustment: RowByStore['session_adjustment'][]
+  plan_override: RowByStore['plan_override'][]
 }
 
 /**
@@ -224,10 +242,10 @@ export interface BackupRows {
 export async function importBackupRows(rows: BackupRows) {
   const db = await getDb()
   const tx = db.transaction(STORES, 'readwrite')
-  const added = { session: 0, workout_set: 0, bodyweight: 0, skipped: 0 }
+  const added = { session: 0, workout_set: 0, bodyweight: 0, session_adjustment: 0, plan_override: 0, skipped: 0 }
   for (const store of STORES) {
     const os = tx.objectStore(store) as any
-    for (const row of rows[store] as any[]) {
+    for (const row of (rows[store] ?? []) as any[]) {
       const dupDate = store === 'bodyweight' ? await os.index('by_date').get(row.measured_on) : undefined
       if ((await os.get(row.id)) || dupDate) {
         added.skipped++
@@ -238,7 +256,7 @@ export async function importBackupRows(rows: BackupRows) {
     }
   }
   await tx.done
-  if (added.session + added.workout_set + added.bodyweight) notifyDb()
+  if (added.session + added.workout_set + added.bodyweight + added.session_adjustment + added.plan_override) notifyDb()
   return added
 }
 
@@ -310,10 +328,10 @@ export async function syncedLocalIds(store: StoreName): Promise<string[]> {
 /**
  * Nach vollstaendigem Pull einer Tabelle: lokale Zeilen entfernen, die als synchronisiert markiert sind und
  * remote nicht mehr existieren. Niemals: pending-Eintraege und Tombstones (beide sind _sync = 'pending').
- * Gilt fuer workout_set und bodyweight; Einheiten haben removeMissingSessions.
+ * Gilt fuer alle Tabellen ausser session; Einheiten haben removeMissingSessions.
  */
 export async function removeMissing(
-  store: 'workout_set' | 'bodyweight',
+  store: 'workout_set' | 'bodyweight' | 'session_adjustment' | 'plan_override',
   remoteIds: Set<string>,
 ): Promise<string[]> {
   const db = await getDb()
@@ -339,19 +357,22 @@ export async function removeMissingSessions(
   remoteIds: Set<string>,
 ): Promise<{ removed: string[]; conflicts: LocalRow<'session'>[] }> {
   const db = await getDb()
-  const tx = db.transaction(['session', 'workout_set'], 'readwrite')
+  const tx = db.transaction(['session', 'workout_set', 'session_adjustment'], 'readwrite')
   const sessions = tx.objectStore('session')
   const sets = tx.objectStore('workout_set')
+  const adjustments = tx.objectStore('session_adjustment')
   const removed: string[] = []
   const conflicts: LocalRow<'session'>[] = []
   for (const s of await sessions.getAll()) {
     if (s._sync !== 'synced' || s._deleted || remoteIds.has(s.id)) continue
     const own = await sets.index('by_session').getAll(s.id)
-    if (own.some((x) => x._sync === 'pending')) {
+    const ownAdj = await adjustments.index('by_session').getAll(s.id)
+    if (own.some((x) => x._sync === 'pending') || ownAdj.some((x) => x._sync === 'pending')) {
       conflicts.push(s)
       continue
     }
     for (const x of own) await sets.delete(x.id)
+    for (const x of ownAdj) await adjustments.delete(x.id)
     await sessions.delete(s.id)
     removed.push(s.id)
   }

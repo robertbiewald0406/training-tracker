@@ -43,12 +43,14 @@ export function subscribeSyncStatus(l: () => void) {
 export const refreshPending = async () => setStatus({ pending: await countPending() })
 
 // Reihenfolge wegen Fremdschlüsseln: session vor workout_set.
-const ORDER: StoreName[] = ['session', 'workout_set', 'bodyweight']
+const ORDER: StoreName[] = ['session', 'session_adjustment', 'workout_set', 'bodyweight', 'plan_override']
 // bodyweight: eine Zeile pro Nutzer und Tag. user_id wird serverseitig gesetzt (default auth.uid()).
 const CONFLICT: Record<StoreName, string> = {
   session: 'id',
   workout_set: 'id',
   bodyweight: 'user_id,measured_on',
+  session_adjustment: 'id',
+  plan_override: 'id',
 }
 const BATCH = 200
 

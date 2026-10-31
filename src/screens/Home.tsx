@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { getMeta, setMeta } from '../lib/db'
 import {
-  dayForVariant,
   defaultVariant,
   isRampUp,
   isTimed,
   otherVariant,
+  planDayForKey,
+  weekStart,
   planDayForDate,
   repsUnit,
   sessionDayKey,
@@ -14,6 +15,7 @@ import {
   variantShort,
   weekOverview,
 } from '../lib/logger'
+import { describeSessionAdjustment, effectiveDay, GRUND_TEXT } from '../lib/adjust'
 import { plan, type PlanDay } from '../lib/plan'
 import { FALLBACK_QUOTE, pickQuote, QUOTES, RECENT_KEY, type PendingQuote } from '../lib/quotes'
 import { supabase } from '../lib/supabase'
@@ -25,7 +27,7 @@ import { Card } from '../ui/Card'
 import { Segmented } from '../ui/Segmented'
 import { Scene } from '../ui/Scene'
 import { Check, DAY_ICONS, Flame } from '../ui/icons'
-import { epley, fmtKg, lastLog, daysBetween } from '../lib/stats'
+import { epley, fmtKg, lastLog, daysBetween, weekAdjustments } from '../lib/stats'
 
 const WEEKDAYS = ['', 'Mo', 'Di', 'Mi', 'Do', 'Fr']
 const WEEKDAYS_LONG = ['', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag']
@@ -54,6 +56,8 @@ async function chooseQuote() {
 interface HomeProps {
   sessions: LocalRow<'session'>[]
   sets: LocalRow<'workout_set'>[]
+  adjustments: LocalRow<'session_adjustment'>[]
+  overrides: LocalRow<'plan_override'>[]
   onQuote: (p: PendingQuote) => void
 }
 
@@ -74,11 +78,46 @@ function lastSummary(
   return `${what} · ${d <= 0 ? 'heute' : d === 1 ? 'gestern' : `vor ${d} Tagen`}`
 }
 
-export function Home({ sessions, sets, onQuote }: HomeProps) {
+/** Diese Woche: ausgelassene und getauschte Uebungen je Einheit mit Grund (Text zur Markierung in der Wochenleiste). */
+function WeekAdjustments({
+  sessions,
+  adjustments,
+  now,
+}: {
+  sessions: LocalRow<'session'>[]
+  adjustments: LocalRow<'session_adjustment'>[]
+  now: Date
+}) {
+  const start = weekStart(now).getTime()
+  const inWeek = new Map(
+    sessions.filter((s) => new Date(s.started_at).getTime() >= start && new Date(s.started_at).getTime() < start + 7 * 86_400_000).map((s) => [s.id, s]),
+  )
+  const rows = adjustments
+    .filter((a) => a.typ !== 'reihenfolge' && inWeek.has(a.session_id))
+    .sort((a, b) => a.logged_at.localeCompare(b.logged_at))
+  if (!rows.length) return null
+  return (
+    <ul className="mt-3 space-y-1 border-t-[3px] border-ink pt-3 text-base" aria-label="Anpassungen dieser Woche">
+      {rows.map((a) => {
+        const d = planDayForKey(inWeek.get(a.session_id)!.day_key, plan)
+        return (
+          <li key={a.id}>
+            <strong>{d ? WEEKDAYS[d.weekday] : ''}</strong> {describeSessionAdjustment(a, plan)}
+            {a.grund ? ` (${GRUND_TEXT[a.grund]})` : ''}
+            {a.dauerhaft ? ', dauerhaft' : ''}
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
+export function Home({ sessions, sets, adjustments, overrides, onQuote }: HomeProps) {
   const now = new Date()
   const today = planDayForDate(now, plan)
   const rampUp = isRampUp(now, sessions, plan)
   const week = weekOverview(plan, sessions, now)
+  const adjusted = weekAdjustments(adjustments, sessions, plan, now)
   // Gewaehlter Tag: standardmaessig heute; am Wochenende der erste offene Tag. Ein Tipp auf die Wochenleiste wechselt.
   const [picked, setPicked] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -90,7 +129,8 @@ export function Home({ sessions, sets, onQuote }: HomeProps) {
       ? variantPick.v
       : defaultVariant(selected, sessions)
     : null
-  const shown = selected ? dayForVariant(selected, variant) : null
+  // Plan + dauerhafte Anpassungen (Einstellungen > Dauerhafte Anpassungen)
+  const shown = selected ? effectiveDay(selected, variant, plan, overrides) : null
   const match = variantMatch(variant, sessions, plan)
 
   const start = async (d: PlanDay) => {
@@ -115,24 +155,37 @@ export function Home({ sessions, sets, onQuote }: HomeProps) {
           {week.map(({ day, done }) => {
             const DIcon = DAY_ICONS[day.key as keyof typeof DAY_ICONS]
             const sel = selected?.key === day.key
+            const adj = adjusted[day.key]
+            const adjText = adj
+              ? `, ${[adj.skipped && `${adj.skipped} ausgelassen`, adj.swapped && `${adj.swapped} getauscht`].filter(Boolean).join(', ')}`
+              : ''
             return (
               <li key={day.key}>
                 <button
                   type="button"
                   aria-pressed={sel}
-                  aria-label={`${WEEKDAYS_LONG[day.weekday]} ${day.name}: ${done ? 'erledigt' : 'offen'}${sel ? ', gewählt' : ''}`}
+                  aria-label={`${WEEKDAYS_LONG[day.weekday]} ${day.name}: ${done ? 'erledigt' : 'offen'}${adjText}${sel ? ', gewählt' : ''}`}
                   onClick={() => setPicked(day.key)}
-                  className={`flex min-h-16 w-full min-w-0 flex-col items-center justify-center gap-1 border-[3px] border-ink ${
+                  className={`relative flex min-h-16 w-full min-w-0 flex-col items-center justify-center gap-1 border-[3px] border-ink ${
                     sel ? 'bg-neon' : done ? 'bg-ok' : 'bg-card'
                   }`}
                 >
                   <span className="font-display uppercase tracking-wider">{WEEKDAYS[day.weekday]}</span>
                   {done ? <Check className="size-6" /> : <DIcon className="size-6" />}
+                  {adj && (
+                    <span
+                      aria-hidden="true"
+                      className="num absolute -right-2 -top-2 min-w-6 border-[3px] border-ink bg-card px-1 text-center text-sm leading-5 text-ink"
+                    >
+                      {adj.skipped + adj.swapped}
+                    </span>
+                  )}
                 </button>
               </li>
             )
           })}
         </ul>
+        <WeekAdjustments sessions={sessions} adjustments={adjustments} now={now} />
       </Card>
       <Card className="space-y-4">
         <p className="text-base">{isToday ? 'Heute' : selected ? 'Gewählter Tag' : 'Wochenende'}</p>
