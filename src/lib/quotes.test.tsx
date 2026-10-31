@@ -109,11 +109,11 @@ describe('Darstellung je verified-Wert', () => {
   })
   it('original: nur die Wortmarke, ohne Etikett und ohne Personennamen', () => {
     const h = html(q('Text', { author: 'Max Mustermann', source: 'Buch', verified: 'original' }))
-    expect(h).toContain('aria-label="Lift Heavy"')
+    expect(h).toContain('aria-label="MuscleBrain"')
     expect(h).not.toContain('Max Mustermann')
     expect(h).not.toContain('Buch')
     expect(h).not.toContain('zugeschrieben')
-    expect(quoteCredit(q('T', { author: 'Lift Heavy' }))).toEqual({ kind: 'original' })
+    expect(quoteCredit(q('T', { author: 'MuscleBrain' }))).toEqual({ kind: 'original' })
   })
   it('zeigt Zitat und Button "Los" (min. 56 px hoch)', () => {
     const h = html(q('Heavy today.'))

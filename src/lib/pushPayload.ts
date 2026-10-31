@@ -7,7 +7,7 @@ export interface PushPayload {
   tag: string
 }
 
-export const DEFAULT_PAYLOAD: PushPayload = { title: 'Lift Heavy', body: 'Neue Nachricht', url: './', tag: 'lift-heavy' }
+export const DEFAULT_PAYLOAD: PushPayload = { title: 'MuscleBrain', body: 'Neue Nachricht', url: './', tag: 'musclebrain' }
 const MAX_BODY = 200
 
 /** Liest den Text einer Push-Nachricht; unlesbar oder leer ergibt eine neutrale Standardnachricht, nie einen Fehler. */

@@ -19,9 +19,9 @@ export const MAX_BACKUP_BYTES = 20 * 1024 * 1024
 
 const pad = (n: number) => String(n).padStart(2, '0')
 
-/** lift-heavy-backup-2026-10-04.json (lokales Datum). */
+/** musclebrain-backup-2026-10-04.json (lokales Datum). */
 export function backupFileName(d: Date = new Date()): string {
-  return `lift-heavy-backup-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}.json`
+  return `musclebrain-backup-${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}.json`
 }
 
 /** Letzter Export aelter als BACKUP_STALE_DAYS Tage? Nie exportiert zaehlt hier nicht als veraltet. */
@@ -67,7 +67,7 @@ export async function exportBackup(env: ShareEnv = browserEnv(), now: Date = new
   let how: 'shared' | 'downloaded' | 'cancelled' = 'downloaded'
   if (env.share && env.canShare?.({ files: [file] })) {
     try {
-      await env.share({ files: [file], title: 'Lift Heavy Backup' })
+      await env.share({ files: [file], title: 'MuscleBrain Backup' })
       how = 'shared'
     } catch (e) {
       if ((e as { name?: string })?.name === 'AbortError') how = 'cancelled'
@@ -120,7 +120,7 @@ export function parseBackup(text: string, localSessionIds: Set<string> = new Set
     return { ok: false, errors: ['Keine gültige JSON-Datei.'] }
   }
   if (!isObj(raw)) return { ok: false, errors: ['Unerwarteter Inhalt: kein Backup.'] }
-  if (raw.format !== BACKUP_FORMAT) return { ok: false, errors: ['Das ist kein Lift-Heavy-Backup.'] }
+  if (raw.format !== BACKUP_FORMAT) return { ok: false, errors: ['Das ist kein MuscleBrain-Backup.'] }
   if (raw.version !== BACKUP_VERSION)
     return {
       ok: false,

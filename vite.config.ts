@@ -24,8 +24,8 @@ export default defineConfig(({ mode }) => ({
         includeAssets: ['icon.svg', 'apple-touch-icon.png'],
         manifest: {
           id: BASE,
-          name: 'Lift Heavy',
-          short_name: 'Lift Heavy',
+          name: 'MuscleBrain',
+          short_name: 'MuscleBrain',
           description: 'Trainings-Tracker: Sätze sofort lokal speichern, offline lauffähig.',
           lang: 'de',
           start_url: BASE,

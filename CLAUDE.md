@@ -150,7 +150,7 @@ Einrichtung für den Besitzer: docs/push-einrichtung.md. Nur auf dem iPhone, wen
 
 ## PWA
 - vite-plugin-pwa (Service Worker nur im Build). Vorab gespeichert: alle App-Dateien, Schriften, Icons, Manifest.
-  Manifest: "Lift Heavy", standalone, start_url/scope = Vite `base` (/training-tracker/), Theme-/Hintergrundfarbe Nachtblau.
+  Manifest: "MuscleBrain", standalone, start_url/scope = Vite `base` (/training-tracker/), Theme-/Hintergrundfarbe Nachtblau.
 - Neue Version: wird im Hintergrund geladen, aktiviert sich beim nächsten App-Start; Hinweis "Neue Version" mit
   Button "Aktualisieren" (kein Neuladen mitten im Training). `navigator.storage.persist()` wird angefragt,
   das Ergebnis nie vorausgesetzt (Backup bleibt der Schutz).
@@ -168,14 +168,14 @@ Einrichtung für den Besitzer: docs/push-einrichtung.md. Nur auf dem iPhone, wen
 
 ## Zitate
 - src/data/quotes.json (100 Einträge: text, author, source, verified). verified = "belegt" (Autor und Quelle),
-  "zugeschrieben" (Autor und Etikett), "original" (nur Wortmarke "Lift Heavy", nie Personennamen).
+  "zugeschrieben" (Autor und Etikett), "original" (nur Wortmarke "MuscleBrain", nie Personennamen).
 - Beim Tap auf "Einheit starten" (Session wird sofort angelegt) erscheint vor der ersten Übung eine
   Vollbild-Karte mit Button "Los". Auswahl zufällig, keines der letzten 30 gezeigten (Liste in meta,
   nie synchronisiert). Bei Wiederaufnahme einer laufenden Einheit kein Zitat. Leere oder defekte Liste
   fällt auf einen neutralen Text zurück, nie auf einen Absturz.
 
 ## Design
-App-Name: "Lift Heavy". Stil "Dusk": Bodybuilding der 80er, erwachsen und ruhig (Sand, Nachtblau, Korall, Petrol), feine
+App-Name: "MuscleBrain" (früher "Lift Heavy"; Repo, URL /training-tracker/, Backup-Formatkennung `lift-heavy-backup` und die lokalen Dateien ~/.lift-heavy-push-* bleiben aus Kompatibilitätsgründen). Stil "Dusk": Bodybuilding der 80er, erwachsen und ruhig (Sand, Nachtblau, Korall, Petrol), feine
 Linien, kantige Formen, wenig Dekoration. Hell und dunkel folgen dem iPhone (`color-scheme: light dark`,
 `prefers-color-scheme`), beide geprüft.
 - Farben als Tailwind-Tokens nach Rollen (src/index.css, @theme hell, `@media (prefers-color-scheme: dark)` dunkel):
@@ -193,8 +193,8 @@ Linien, kantige Formen, wenig Dekoration. Hell und dunkel folgen dem iPhone (`co
 - Form: 2 px Konturen in `ink`, scharfe Ecken, Buttons mind. 56 px hoch. Karten und der eine Haupt-Button (`primary`)
   haben eine feine untere Kante (`shadow-hard`, 3 px, kein Versatz zur Seite); alle anderen Buttons, Schalter und
   Auswahlfelder sind flach, aktiv = `mark`-Fläche. Keine Verläufe außer dem leichten Seitenhintergrund.
-- Marke: Wortmarke "LIFT" (Text) über feiner Akzentlinie und weit gesperrtem "HEAVY" (accent), in der Kopfzeile und auf
-  der Anmeldeseite (src/ui/Wordmark.tsx). Browser-Titel "Lift Heavy". App-Icon: Nachtblau, Korall-Sonne mit Streifen,
+- Marke: Wortmarke "MUSCLE" (Text) über feiner Akzentlinie und weit gesperrtem "BRAIN" (accent), in der Kopfzeile und auf
+  der Anmeldeseite (src/ui/Wordmark.tsx). Browser-Titel "MuscleBrain". App-Icon: Nachtblau, Korall-Sonne mit Streifen,
   Langhantel in Sand (`npm run icons`, scripts/make-icons.mjs).
 - Symbole: eigene Linien-Symbole in src/ui/icons.tsx (24er Raster, Strich 1,75, kantig; keine Emojis, Bilder oder
   Icon-Bibliothek). Hantel = Sync-Symbol (dreht sich beim Sync), Scheibe = Satzfortschritt, Stoppuhr = Pausentimer,

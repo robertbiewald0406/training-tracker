@@ -155,7 +155,7 @@ describe('Ungueltige Datei importiert nichts', () => {
   it('kein JSON, falsches Format, falsche oder neuere Version, fehlende Listen', async () => {
     await bad('kein JSON', 'das ist kein json', /JSON/)
     await bad('Array', '[]', /kein Backup/)
-    await bad('Format', JSON.stringify({ ...base(), format: 'anderes' }), /kein Lift-Heavy-Backup/)
+    await bad('Format', JSON.stringify({ ...base(), format: 'anderes' }), /kein MuscleBrain-Backup/)
     await bad('Version 2', JSON.stringify({ ...base(), version: 2 }), /neueren/)
     await bad('Version fehlt', JSON.stringify({ ...base(), version: undefined }), /Formatversion/)
     await bad('Liste fehlt', JSON.stringify({ ...base(), workout_set: undefined }), /workout_set/)
@@ -208,7 +208,7 @@ describe('Ungueltige Datei importiert nichts', () => {
 describe('Ausgabe und letzter Export', () => {
   const now = new Date(2026, 9, 4, 14, 3)
   it('Dateiname mit Datum', () => {
-    expect(backupFileName(now)).toBe('lift-heavy-backup-2026-10-04.json')
+    expect(backupFileName(now)).toBe('musclebrain-backup-2026-10-04.json')
   })
   it('nutzt das Teilen-Menue mit Datei und merkt sich den Zeitpunkt', async () => {
     await fill()
@@ -222,7 +222,7 @@ describe('Ausgabe und letzter Export', () => {
     }
     const r = await exportBackup(env, now)
     expect(r.how).toBe('shared')
-    expect(shared[0].name).toBe('lift-heavy-backup-2026-10-04.json')
+    expect(shared[0].name).toBe('musclebrain-backup-2026-10-04.json')
     expect(JSON.parse(await shared[0].text()).session).toHaveLength(2)
     expect(await getLastExport()).toBe(now.toISOString())
   })
@@ -230,7 +230,7 @@ describe('Ausgabe und letzter Export', () => {
     const env = noShare()
     const r = await exportBackup(env, now)
     expect(r.how).toBe('downloaded')
-    expect(env.downloaded[0].name).toBe('lift-heavy-backup-2026-10-04.json')
+    expect(env.downloaded[0].name).toBe('musclebrain-backup-2026-10-04.json')
     expect(await getLastExport()).toBe(now.toISOString())
   })
   it('Fallback Download, wenn das Teilen scheitert; Abbruch im Teilen-Menue speichert nichts', async () => {
