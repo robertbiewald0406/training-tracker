@@ -125,6 +125,23 @@ volle Woche; über die Pfeile rückwirkend bis zur ersten Einheit.
   Bauch zählt nicht. Dazu Trainingstage, ausgelassene/getauschte Übungen mit Grund, Körpergewicht (7-Tage-Mittel
   zum Wochenende gegen eine Woche früher). Je Abschnitt ein kurzer sachlicher Satz (`summarize`).
 
+## Push am Sonntag
+Einrichtung für den Besitzer: docs/push-einrichtung.md. Nur auf dem iPhone, wenn die App zum Home-Bildschirm hinzugefügt ist.
+- Service Worker: src/sw.ts (vite-plugin-pwa `injectManifest`, Vorab-Speicher wie zuvor, dazu Push und Tipp auf die
+  Nachricht; Build prüft ihn zusätzlich mit tsconfig.sw.json). Nachrichteninhalt/Ziel: src/lib/pushPayload.ts.
+- Schalter: Mehr > "Wochenbericht per Push" (src/screens/PushCard.tsx, src/lib/push.ts). Ein Abo = Zeile in
+  `push_subscription` (Migration 003, RLS, nur authenticated), direkt geschrieben, nicht in IndexedDB und nicht
+  synchronisiert. Aus = Zeile löschen und Abo beenden. Auf dem iPhone ohne installierte App gibt es eine Erklärung statt Schalter.
+- Schlüssel (VAPID): nur der öffentliche (`VITE_VAPID_PUBLIC_KEY`, 87 Zeichen, GitHub-Variable, im Workflow auf Länge
+  geprüft) steht im Frontend. Der private Schlüssel und `CRON_SECRET` liegen nur als Supabase-Secrets, der Aufruf-Link
+  und das Passwort zusätzlich im Vault. Nie im Repo, nie in .env.
+- Bericht serverseitig: DB-Funktion `weekly_report(p_user, p_week_start)` (Migration 003, nur service_role) mit denselben
+  Regeln wie src/lib/report.ts (Test src/lib/weeklyReportSql.test.ts führt die Migrationen in PGlite aus und
+  vergleicht beide). Ohne Plan-Daten, daher nur Anzahlen. Edge Function supabase/functions/weekly-push (Text in
+  message.ts: nur Anzahlen, ohne Namen, Gewichte, Körpergewicht).
+- Zeitplan: pg_cron (Migration 004) Sonntag 16 und 17 Uhr UTC, `send_weekly_report_push()` sendet nur bei Berlin
+  Sonntag 18 Uhr (Sommer-/Winterzeit). Je Abo und Woche einmal (`last_week_sent`); 404/410 vom Push-Dienst löscht das Abo.
+
 ## Backup
 - Einstellungen: "Backup exportieren" (JSON mit Formatversion, Zeitstempel, session/workout_set/bodyweight; ohne
   Tombstones, meta, Tokens; Teilen-Menü, Fallback Download) und "Backup importieren" (prüft die ganze Datei,

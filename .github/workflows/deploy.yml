@@ -34,6 +34,7 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_VAPID_PUBLIC_KEY: ${{ vars.VITE_VAPID_PUBLIC_KEY }}
         run: |
           if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_PUBLISHABLE_KEY" ]; then
             echo "::error::Die GitHub-Variablen VITE_SUPABASE_URL und VITE_SUPABASE_PUBLISHABLE_KEY fehlen (Settings > Secrets and variables > Actions > Variables)."
@@ -44,6 +45,11 @@ jobs:
               echo "::error::Das ist ein geheimer Schlüssel. Im Frontend darf nur der Publishable Key stehen."
               exit 1 ;;
           esac
+          # Optional: öffentlicher VAPID-Schlüssel für Push. Genau 87 Zeichen; ein privater Schlüssel (43 Zeichen) wird abgelehnt.
+          if [ -n "$VITE_VAPID_PUBLIC_KEY" ] && ! echo "$VITE_VAPID_PUBLIC_KEY" | grep -Eq '^[A-Za-z0-9_-]{87}$'; then
+            echo "::error::VITE_VAPID_PUBLIC_KEY ist kein öffentlicher VAPID-Schlüssel (87 Zeichen). Der private Schlüssel gehört nie hierher."
+            exit 1
+          fi
           # Alte JWT-Schlüssel (eyJ...): Rolle im Payload prüfen
           if echo "$VITE_SUPABASE_PUBLISHABLE_KEY" | cut -d. -f2 | tr '_-' '/+' | base64 -d 2>/dev/null | grep -q service_role; then
             echo "::error::Der Schlüssel hat die Rolle service_role. Bitte den Publishable/anon Key verwenden."
@@ -55,6 +61,7 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_VAPID_PUBLIC_KEY: ${{ vars.VITE_VAPID_PUBLIC_KEY }}
 
       - name: Keine Geheimnisse und keine Dev-Texte im Build
         run: node scripts/check-build.mjs

@@ -16,6 +16,10 @@ export default defineConfig(({ mode }) => ({
         // "prompt": Eine neue Version wird im Hintergrund geladen und aktiviert sich beim naechsten App-Start.
         // Die App zeigt "Neue Version" und kann sofort aktualisieren. Kein Neuladen mitten im Training.
         registerType: 'prompt',
+        // Eigener Service Worker (src/sw.ts): Vorab-Speicher wie zuvor, dazu Push-Nachrichten.
+        strategies: 'injectManifest',
+        srcDir: 'src',
+        filename: 'sw.ts',
         base: BASE,
         includeAssets: ['icon.svg', 'apple-touch-icon.png'],
         manifest: {
@@ -36,11 +40,9 @@ export default defineConfig(({ mode }) => ({
             { src: 'pwa-maskable-512x512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
           ],
         },
-        workbox: {
+        injectManifest: {
           // Alle App-Dateien und Schriften vorab speichern, damit der Start ohne Netz klappt.
           globPatterns: ['**/*.{js,css,html,woff2,png,svg,webmanifest}'],
-          navigateFallback: `${BASE}index.html`,
-          cleanupOutdatedCaches: true,
         },
       }),
   ],
