@@ -45,6 +45,17 @@ jobs:
               echo "::error::Das ist ein geheimer Schlüssel. Im Frontend darf nur der Publishable Key stehen."
               exit 1 ;;
           esac
+          # Der Publishable Key beginnt mit sb_publishable_ (oder ist ein alter JWT eyJ...) und ist nie der VAPID-Schlüssel.
+          case "$VITE_SUPABASE_PUBLISHABLE_KEY" in
+            sb_publishable_*|eyJ*) ;;
+            *)
+              echo "::error::VITE_SUPABASE_PUBLISHABLE_KEY sieht nicht wie ein Publishable Key aus (sb_publishable_...). Supabase > Project Settings > API Keys > Publishable key."
+              exit 1 ;;
+          esac
+          if [ -n "$VITE_VAPID_PUBLIC_KEY" ] && [ "$VITE_VAPID_PUBLIC_KEY" = "$VITE_SUPABASE_PUBLISHABLE_KEY" ]; then
+            echo "::error::VITE_VAPID_PUBLIC_KEY und VITE_SUPABASE_PUBLISHABLE_KEY haben denselben Wert. Die beiden Variablen sind vertauscht."
+            exit 1
+          fi
           # Optional: öffentlicher VAPID-Schlüssel für Push. Genau 87 Zeichen; ein privater Schlüssel (43 Zeichen) wird abgelehnt.
           if [ -n "$VITE_VAPID_PUBLIC_KEY" ] && ! echo "$VITE_VAPID_PUBLIC_KEY" | grep -Eq '^[A-Za-z0-9_-]{87}$'; then
             echo "::error::VITE_VAPID_PUBLIC_KEY ist kein öffentlicher VAPID-Schlüssel (87 Zeichen). Der private Schlüssel gehört nie hierher."
