@@ -79,6 +79,9 @@ export function weekTotals(
 }
 
 /** Harte Saetze je primaerem Muskel in einer Woche (nur Muskeln mit Saetzen). */
+/** Rumpfmuskeln (Bauch) zaehlen nicht in den Wochensaetzen; alte Saetze bleiben lesbar. */
+export const UNCOUNTED_MUSCLES = new Set(['abs', 'core', 'obliques'])
+
 export function hardSetsByMuscle(
   sets: WorkoutSetRow[],
   sessions: SessionLike[],
@@ -93,7 +96,7 @@ export function hardSetsByMuscle(
   const by = new Map<string, WorkoutSetRow[]>()
   for (const s of setsInRange(sets, sessions, start, end)) {
     const muscle = plan.exercises[s.exercise_key]?.primary_muscle
-    if (!muscle) continue
+    if (!muscle || UNCOUNTED_MUSCLES.has(muscle)) continue
     by.set(muscle, [...(by.get(muscle) ?? []), s])
   }
   for (const [m, list] of by) {

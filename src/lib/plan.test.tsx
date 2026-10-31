@@ -38,26 +38,18 @@ describe('plan.json', () => {
   })
   it('stillgelegte Uebungen stehen in keinem Tag und in keinen alternatives aktiver Uebungen', () => {
     const retired = Object.entries(plan.exercises).filter(([, e]) => e.retired).map(([k]) => k)
-    for (const k of ['hs_chest_press', 'plank', 'side_plank', 'cable_pallof_press', 'hanging_knee_raise', 'dead_bug', 'hanging_leg_raise', 'neg_situp', 'hs_ab_machine', 'lying_reverse_crunch']) expect(retired).toContain(k)
+    for (const k of ['hs_chest_press', 'plank', 'side_plank', 'cable_pallof_press', 'hanging_knee_raise', 'captain_chair_leg_raise', 'russian_twist', 'dead_bug', 'hanging_leg_raise', 'neg_situp', 'hs_ab_machine', 'lying_reverse_crunch']) expect(retired).toContain(k)
     for (const d of plan.days) for (const it of d.items) expect(retired, `${d.key}: ${it.exercise_key}`).not.toContain(it.exercise_key)
     for (const [k, e] of Object.entries(plan.exercises))
       if (!e.retired) for (const a of e.alternatives) expect(retired, `${k} -> ${a}`).not.toContain(a)
   })
-  it('Bauch: Mo und Fr Beinheben + Russian Twist, Beintage ohne Bauch', () => {
-    const day = (k: string) => plan.days.find((d) => d.key === k)!
-    const tail = (k: string, n: number) => day(k).items.slice(-n).map((i) => [i.exercise_key, i.sets, i.rep_min, i.rep_max, i.rest_sec])
-    const abs = [
-      ['captain_chair_leg_raise', 4, 12, 15, 60],
-      ['russian_twist', 3, 16, 20, 60],
-    ]
-    expect(tail('mo_brust', 2)).toEqual(abs)
-    expect(tail('fr_arme', 2)).toEqual(abs)
-    const core = ['captain_chair_leg_raise', 'russian_twist', 'dead_bug', 'hanging_leg_raise', 'neg_situp', 'hs_ab_machine', 'lying_reverse_crunch']
-    for (const k of ['mo_brust', 'fr_arme']) expect(day(k).items.filter((i) => core.includes(i.exercise_key)).length, k).toBe(2)
-    for (const k of ['di_ruecken', 'mi_beine', 'do_schultern'])
-      expect(day(k).items.filter((i) => core.includes(i.exercise_key)), k).toEqual([])
-    expect(plan.exercises.captain_chair_leg_raise.alternatives).toEqual([])
-    expect(plan.exercises.russian_twist.alternatives).toEqual([])
+  it('Bauch: alle Rumpfuebungen stillgelegt und in keinem Tag', () => {
+    const core = Object.entries(plan.exercises).filter(([, e]) => ['abs', 'core', 'obliques'].includes(e.primary_muscle))
+    expect(core.map(([k]) => k)).toEqual(expect.arrayContaining(['captain_chair_leg_raise', 'russian_twist', 'dead_bug']))
+    for (const [k, e] of core) expect(e.retired, k).toBe(true)
+    const keys = core.map(([k]) => k)
+    for (const d of plan.days) expect(d.items.filter((i) => keys.includes(i.exercise_key)), d.key).toEqual([])
+    for (const d of plan.days) expect(d.name, d.key).not.toMatch(/Bauch/)
   })
   it('Adduktoren und Abduktoren stehen in beiden Beinvarianten', () => {
     const legs = plan.days.find((d) => d.key === 'mi_beine')!

@@ -73,6 +73,15 @@ describe('Wochenwerte', () => {
     expect(hardSetsByMuscle(sets, sessions, plan, NOW, 0)).toEqual({ chest: 2 })
     expect(hardSetsByMuscle(sets, sessions, plan, NOW, 1)).toEqual({ quads: 1 })
   })
+  it('zaehlt Bauch (abs, core, obliques) nicht in den Wochensaetzen', () => {
+    const more = [
+      ...sets,
+      set({ session_id: 'a', set_no: 5, exercise_key: 'captain_chair_leg_raise', weight_kg: 0, reps: 12 }),
+      set({ session_id: 'a', set_no: 6, exercise_key: 'russian_twist', weight_kg: 0, reps: 20 }),
+      set({ session_id: 'a', set_no: 7, exercise_key: 'plank', weight_kg: 0, reps: 45 }),
+    ]
+    expect(hardSetsByMuscle(more, sessions, plan, NOW, 0)).toEqual({ chest: 2 })
+  })
 })
 
 describe('Vergleich mit dem letzten Mal', () => {

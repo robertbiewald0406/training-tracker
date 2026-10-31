@@ -36,10 +36,11 @@ Hosting: GitHub Pages über GitHub Actions (Vite `base` auf den Repo-Namen).
   sonst B; auf der Startseite per Umschalter änderbar ("Nächste Woche: B (Hinten)"). Sie steckt ohne DB-Änderung im
   day_key (`mi_beine_a`, `mi_beine_b`). Zuordnung zum Plan-Tag über das Präfix (`planDayForKey`, `dayKeyMatches`,
   `resolveSessionDay` in src/lib/logger.ts). Vorbelegung und "Letztes Mal": gleiche Variante zuerst, sonst die andere.
-- Verteilung: Bauch nur Montag und Freitag, jeweils am Ende: captain_chair_leg_raise 4 x 12-15, russian_twist
-  3 x 16-20 (ohne Gewicht, je 60 s Pause). Beintage ohne Bauch. Adduktoren, Abduktoren und Waden in beiden Varianten.
+- Verteilung: kein Bauch im Plan (alle Rumpfübungen mit primary_muscle abs, core, obliques sind stillgelegt, die
+  Tage heißen "Brust + Trizeps" und "Arme"). Statistik zählt abs/core/obliques nicht in den Wochensätzen
+  (`UNCOUNTED_MUSCLES` in src/lib/stats.ts). Adduktoren, Abduktoren und Waden in beiden Beinvarianten.
 - Stillgelegt (`retired`: true, Definition bleibt, damit alte Sätze lesbar sind): hs_chest_press, plank, side_plank,
-  cable_pallof_press, hanging_knee_raise, dead_bug, hanging_leg_raise, neg_situp, hs_ab_machine, lying_reverse_crunch. Eine retired-Übung steht nie in einem Tag oder in alternatives einer
+  cable_pallof_press, hanging_knee_raise, captain_chair_leg_raise, russian_twist, dead_bug, hanging_leg_raise, neg_situp, hs_ab_machine, lying_reverse_crunch. Eine retired-Übung steht nie in einem Tag oder in alternatives einer
   aktiven Übung (Test in plan.test.tsx). Schlüssel nie umbenennen oder löschen.
 - Optionales Feld `warning` je Übung (captain_chair_leg_raise, russian_twist, dead_bug): gelber Hinweiskasten (src/ui/Warning.tsx)
   direkt unter dem Hinweis `cue`, nur bei Übungen mit warning.
