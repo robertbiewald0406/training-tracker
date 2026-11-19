@@ -29,7 +29,7 @@ export interface BodyweightRow {
   weight_kg: number
 }
 
-export type AdjustTyp = 'auslassen' | 'tauschen' | 'reihenfolge'
+export type AdjustTyp = 'auslassen' | 'tauschen' | 'reihenfolge' | 'hinzufuegen'
 export type AdjustGrund = 'schmerz' | 'geraet_belegt' | 'zeit' | 'anderes'
 
 /** Anpassung einer Einheit: Uebung ausgelassen, getauscht oder in der Reihenfolge verschoben. */
@@ -37,9 +37,9 @@ export interface SessionAdjustmentRow {
   id: string
   session_id: string
   typ: AdjustTyp
-  original_key: string
+  original_key: string // bei 'hinzufuegen': die hinzugefuegte Uebung
   neuer_key: string | null // nur bei 'tauschen'
-  position: number | null // nur bei 'reihenfolge': Zielposition in der Tagesliste (0-basiert)
+  position: number | null // 'reihenfolge': Zielposition, 'hinzufuegen': Einfuegeposition in der Tagesliste (0-basiert)
   grund: AdjustGrund | null
   note: string | null // hoechstens 200 Zeichen
   dauerhaft: boolean // zusaetzlich als plan_override gespeichert
@@ -49,7 +49,7 @@ export interface SessionAdjustmentRow {
 /** Dauerhafte Anpassung eines Plan-Tags, wird beim Laden ueber plan.json gelegt. */
 export interface PlanOverrideRow {
   id: string
-  day_key: string // Plan-Tag (ohne Variante), z. B. mi_beine
+  day_key: string // Plan-Tag, z. B. mi_beine; bei 'hinzufuegen' auf einem Tag mit Variante z. B. mi_beine_b (nur diese Variante)
   typ: AdjustTyp
   exercise_key: string
   neuer_key: string | null

@@ -9,6 +9,7 @@ import {
   setMeta,
   type BackupRows,
 } from './db'
+import { planDayForKey } from './logger'
 import { plan } from './plan'
 import type { AdjustGrund, AdjustTyp } from './types'
 
@@ -86,7 +87,7 @@ export const getLastExport = () => getMeta<string>(LAST_EXPORT_KEY)
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const SIDES = ['left', 'right', 'both']
-const ADJUST_TYPES = ['auslassen', 'tauschen', 'reihenfolge']
+const ADJUST_TYPES = ['auslassen', 'tauschen', 'reihenfolge', 'hinzufuegen']
 const ADJUST_GRUENDE = ['schmerz', 'geraet_belegt', 'zeit', 'anderes']
 
 export type ParseResult =
@@ -215,13 +216,13 @@ export function parseBackup(text: string, localSessionIds: Set<string> = new Set
     let ok = checkId(e, w)
     if (typeof e.session_id !== 'string' || !UUID.test(e.session_id)) ok = (err(`${w}.session_id: keine gültige UUID.`), false)
     else if (!sessionIds.has(e.session_id)) ok = (err(`${w}.session_id: verweist auf eine unbekannte Einheit.`), false)
-    if (typeof e.typ !== 'string' || !ADJUST_TYPES.includes(e.typ)) ok = (err(`${w}.typ: auslassen, tauschen oder reihenfolge erwartet.`), false)
+    if (typeof e.typ !== 'string' || !ADJUST_TYPES.includes(e.typ)) ok = (err(`${w}.typ: auslassen, tauschen, reihenfolge oder hinzufuegen erwartet.`), false)
     if (typeof e.original_key !== 'string' || !(e.original_key in plan.exercises)) ok = (err(`${w}.original_key: unbekannte Übung.`), false)
     if (e.neuer_key != null && (typeof e.neuer_key !== 'string' || !(e.neuer_key in plan.exercises)))
       ok = (err(`${w}.neuer_key: unbekannte Übung.`), false)
     if (e.typ === 'tauschen' && e.neuer_key == null) ok = (err(`${w}.neuer_key: fehlt beim Tauschen.`), false)
     if (e.position != null && !isInt(e.position, 0, 99)) ok = (err(`${w}.position: leer oder ganze Zahl 0–99 erwartet.`), false)
-    if (e.typ === 'reihenfolge' && e.position == null) ok = (err(`${w}.position: fehlt bei der Reihenfolge.`), false)
+    if ((e.typ === 'reihenfolge' || e.typ === 'hinzufuegen') && e.position == null) ok = (err(`${w}.position: fehlt bei Reihenfolge und Hinzufügen.`), false)
     if (e.grund != null && (typeof e.grund !== 'string' || !ADJUST_GRUENDE.includes(e.grund)))
       ok = (err(`${w}.grund: ungültig.`), false)
     if (e.note != null && (typeof e.note !== 'string' || e.note.length > 200)) ok = (err(`${w}.note: höchstens 200 Zeichen.`), false)
@@ -246,14 +247,14 @@ export function parseBackup(text: string, localSessionIds: Set<string> = new Set
     const w = `plan_override[${i}]`
     if (!isObj(e)) return void err(`${w}: kein Objekt.`)
     let ok = checkId(e, w)
-    if (typeof e.day_key !== 'string' || !plan.days.some((d) => d.key === e.day_key)) ok = (err(`${w}.day_key: unbekannter Tag.`), false)
-    if (typeof e.typ !== 'string' || !ADJUST_TYPES.includes(e.typ)) ok = (err(`${w}.typ: auslassen, tauschen oder reihenfolge erwartet.`), false)
+    if (typeof e.day_key !== 'string' || !planDayForKey(e.day_key, plan)) ok = (err(`${w}.day_key: unbekannter Tag.`), false)
+    if (typeof e.typ !== 'string' || !ADJUST_TYPES.includes(e.typ)) ok = (err(`${w}.typ: auslassen, tauschen, reihenfolge oder hinzufuegen erwartet.`), false)
     if (typeof e.exercise_key !== 'string' || !(e.exercise_key in plan.exercises)) ok = (err(`${w}.exercise_key: unbekannte Übung.`), false)
     if (e.neuer_key != null && (typeof e.neuer_key !== 'string' || !(e.neuer_key in plan.exercises)))
       ok = (err(`${w}.neuer_key: unbekannte Übung.`), false)
     if (e.typ === 'tauschen' && e.neuer_key == null) ok = (err(`${w}.neuer_key: fehlt beim Tauschen.`), false)
     if (e.position != null && !isInt(e.position, 0, 99)) ok = (err(`${w}.position: leer oder ganze Zahl 0–99 erwartet.`), false)
-    if (e.typ === 'reihenfolge' && e.position == null) ok = (err(`${w}.position: fehlt bei der Reihenfolge.`), false)
+    if ((e.typ === 'reihenfolge' || e.typ === 'hinzufuegen') && e.position == null) ok = (err(`${w}.position: fehlt bei Reihenfolge und Hinzufügen.`), false)
     if (!isIso(e.created_at)) ok = (err(`${w}.created_at: kein gültiger Zeitpunkt.`), false)
     if (ok)
       rows.plan_override.push({

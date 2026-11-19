@@ -7,6 +7,7 @@ import {
   buildOverride,
   describeOverride,
   effectiveDay,
+  defaultItem,
   effectiveSessionDay,
   moveTarget,
   remapPosition,
@@ -16,9 +17,9 @@ import {
 } from './adjust'
 import { parseBackup } from './backup'
 import { applyRemote, deleteLocal, exportAll, getAll, removeMissingSessions, resetDbHandle, saveLocal } from './db'
-import { derivePosition, type Position } from './logger'
+import { derivePosition, positionDone, prefill, setsByPosition, type Position } from './logger'
 import { plan } from './plan'
-import { weekAdjustments } from './stats'
+import { hardSetsByMuscle, weekAdjustments } from './stats'
 import { syncNow } from './sync'
 import type { PlanOverrideRow, SessionAdjustmentRow } from './types'
 
@@ -214,6 +215,127 @@ describe('Kalender: Wochenmarkierung', () => {
       mi_beine: { skipped: 1, swapped: 0 },
     })
     expect(weekAdjustments(rows, sessions, plan, now, 1)).toEqual({ mo_brust: { skipped: 1, swapped: 0 } })
+  })
+})
+
+const swapRow = (sessionId: string, from: string, to: string, over: Partial<SessionAdjustmentRow> = {}): SessionAdjustmentRow => ({
+  ...buildAdjustment({ sessionId, typ: 'tauschen', original_key: from, neuer_key: to, dauerhaft: false }),
+  ...over,
+})
+const addRow = (sessionId: string, key: string, position: number, over: Partial<SessionAdjustmentRow> = {}): SessionAdjustmentRow => ({
+  ...buildAdjustment({ sessionId, typ: 'hinzufuegen', original_key: key, position, dauerhaft: false }),
+  ...over,
+})
+
+describe('Tauschen gegen eine Übung aus dem Katalog (auch aus keinem Tag)', () => {
+  const sid = 'sess-swap'
+  const session = { id: sid, day_key: 'mo_brust' }
+  const setOf = (key: string, no: number, t: number, w = 50) => ({
+    id: `${key}-${no}`, session_id: sid, exercise_key: key, set_no: no, weight_kg: w, reps: 10, rir: null,
+    is_warmup: false, side: 'both' as const, logged_at: new Date(Date.UTC(2026, 9, 5, 10, t)).toISOString(), note: null,
+  })
+  it('nur heute: nur diese Einheit läuft mit der getauschten Übung, der Plan bleibt', () => {
+    const a = swapRow(sid, 'fly_machine', 'hs_high_row')
+    expect(keys(effectiveSessionDay(session, plan, [], [a])!.items)).toEqual(['hs_incline_press', 'mts_chest_press', 'cable_fly_low_to_high', 'hs_high_row', 'pushdown_vgrip'])
+    expect(keys(effectiveSessionDay({ id: 'x', day_key: 'mo_brust' }, plan, [], [a])!.items)).toEqual(A)
+    expect(keys(plan.days.find((d) => d.key === 'mo_brust')!.items)).toEqual(A)
+  })
+  it('dauerhaft: jede Einheit des Tages, zurücksetzen stellt den Plan wieder her', () => {
+    const o = buildOverride({ dayKey: 'mo_brust', typ: 'tauschen', exercise_key: 'fly_machine', neuer_key: 'hs_high_row' })
+    expect(keys(effectiveSessionDay({ id: 'x', day_key: 'mo_brust' }, plan, [o], [])!.items)).toContain('hs_high_row')
+    expect(keys(effectiveSessionDay({ id: 'x', day_key: 'mo_brust' }, plan, [], [])!.items)).toEqual(A)
+  })
+  it('Einheit läuft weiter: Fortschritt, Vorbelegung und Statistik laufen über die tatsächlich gemachte Übung', () => {
+    const swapped = effectiveSessionDay(session, plan, [], [swapRow(sid, 'fly_machine', 'hs_high_row')])!
+    const idx = swapped.items.findIndex((i) => i.exercise_key === 'hs_high_row')
+    expect(idx).toBe(3)
+    const sets = [setOf('hs_high_row', 1, 0, 70), setOf('hs_high_row', 2, 5, 72.5)]
+    // Fortschritt dieser Position zählt die getauschte Übung
+    const per = setsByPosition(swapped, plan, sets, sid)
+    expect(positionDone(swapped, plan, per[idx], idx)).toBe(2)
+    // Vorbelegung: letzter Satz der tatsächlich gemachten Übung
+    expect(prefill('hs_high_row', 'both', sets, [{ id: sid, day_key: 'mo_brust', started_at: '2026-10-05T10:00:00.000Z', ended_at: null }], sid)).toEqual({ weight_kg: 72.5, reps: 10 })
+    expect(prefill('fly_machine', 'both', sets, [], sid)).toBeNull()
+    // Statistik: Muskel der gemachten Übung (Latissimus), nicht der geplanten (Brust)
+    const week = hardSetsByMuscle(sets, [{ id: sid, started_at: new Date(2026, 9, 7, 10).toISOString() }], plan, new Date(2026, 9, 7, 12), 0)
+    expect(week).toEqual({ lats: 2 })
+  })
+  it('Tausch gegen eine Alternative und der Wechsel auf eine Übung ohne Tag funktionieren gleich', () => {
+    for (const to of plan.exercises.mts_chest_press.alternatives.filter((k) => !plan.exercises[k].retired && !A.includes(k)).concat('hs_calf_machine')) {
+      const d = effectiveSessionDay(session, plan, [], [swapRow(sid, 'cable_fly_low_to_high', to)])!
+      expect(keys(d.items)).toContain(to)
+      expect(keys(d.items)).not.toContain('cable_fly_low_to_high')
+    }
+  })
+})
+
+describe('Übung hinzufügen', () => {
+  const sid = 'sess-add'
+  const session = { id: sid, day_key: 'mo_brust' }
+  it('wird an der Position eingefügt, bekommt Standardwerte und ändert den Plan nicht', () => {
+    const d = effectiveSessionDay(session, plan, [], [addRow(sid, 'lat_pulldown_wide', 2)])!
+    expect(keys(d.items)).toEqual([A[0], A[1], 'lat_pulldown_wide', A[2], A[3], A[4]])
+    expect(d.items[2]).toEqual({ exercise_key: 'lat_pulldown_wide', sets: 3, rep_min: 8, rep_max: 12, rest_sec: 90 })
+    expect(keys(plan.days.find((d2) => d2.key === 'mo_brust')!.items)).toEqual(A)
+    expect(keys(effectiveSessionDay({ id: 'x', day_key: 'mo_brust' }, plan, [], [addRow(sid, 'lat_pulldown_wide', 2)])!.items)).toEqual(A)
+  })
+  it('Zeitübungen bekommen Sekunden statt Wiederholungen', () => {
+    expect(defaultItem(plan, 'plank')).toEqual({ exercise_key: 'plank', sets: 3, rep_min: 30, rep_max: 60, rest_sec: 60 })
+  })
+  it('ignoriert stillgelegte, unbekannte und schon vorhandene Übungen; Position wird begrenzt', () => {
+    for (const k of ['hs_chest_press', 'gibt_es_nicht', A[0]])
+      expect(keys(applyAdjustments(mo.items, [adj('hinzufuegen', k, { position: 1 })], plan))).toEqual(A)
+    expect(keys(applyAdjustments(mo.items, [adj('hinzufuegen', 'y_row', { position: 99 })], plan)).at(-1)).toBe('y_row')
+    expect(keys(applyAdjustments(mo.items, [adj('hinzufuegen', 'y_row', { position: -3 })], plan))[0]).toBe('y_row')
+  })
+  it('dauerhaft: gilt für den Tag; auf dem Beintag nur in der gewählten Variante', () => {
+    const legs = plan.days.find((d) => d.key === 'mi_beine')!
+    const all = buildOverride({ dayKey: 'mo_brust', typ: 'hinzufuegen', exercise_key: 'face_pull_rope', position: 1 })
+    expect(keys(effectiveDay(mo, null, plan, [all]).items)[1]).toBe('face_pull_rope')
+    const onlyB = buildOverride({ dayKey: 'mi_beine_b', typ: 'hinzufuegen', exercise_key: 'hs_calf_machine', position: 0 })
+    expect(keys(effectiveDay(legs, 'B', plan, [onlyB]).items)[0]).toBe('hs_calf_machine')
+    expect(keys(effectiveDay(legs, 'A', plan, [onlyB]).items)).not.toContain('hs_calf_machine')
+    const both = buildOverride({ dayKey: 'mi_beine', typ: 'hinzufuegen', exercise_key: 'hs_calf_machine', position: 0 })
+    for (const v of ['A', 'B']) expect(keys(effectiveDay(legs, v, plan, [both]).items)[0]).toBe('hs_calf_machine')
+    expect(describeOverride(onlyB, plan)).toEqual({ day: 'Beine · B', text: 'Hammer Strength Wadenmaschine (sitzend) hinzugefügt' })
+  })
+  it('wird nicht doppelt angewendet, wenn dauerhaft', () => {
+    const o = buildOverride({ dayKey: 'mo_brust', typ: 'hinzufuegen', exercise_key: 'y_row', position: 1 })
+    const a = addRow(sid, 'y_row', 1, { dauerhaft: true })
+    expect(keys(effectiveSessionDay(session, plan, [o], [a])!.items).filter((k) => k === 'y_row')).toHaveLength(1)
+  })
+  it('laufende Einheit: aktuelle Übung bleibt, nach dem Ende geht es mit der neuen weiter, Sätze zählen nach ihrem Key', () => {
+    const items = mo.items
+    const pos: Position = { itemIdx: 1, chosen: {}, assign: { 'w1': 0, 'w2': 1 } }
+    const next = applyAdjustments(items, [adj('hinzufuegen', 'lat_pulldown_wide', { position: 2 })], plan)
+    const r = remapPosition(pos, items, next)
+    expect(r.itemIdx).toBe(1)
+    expect(r.assign).toEqual({ w1: 0, w2: 1 })
+    const setL = (no: number) => ({ id: `l${no}`, session_id: sid, exercise_key: 'lat_pulldown_wide', set_no: no, weight_kg: 40, reps: 10, rir: null, is_warmup: false, side: 'both' as const, logged_at: `2026-10-05T10:0${no}:00.000Z`, note: null })
+    const d = { ...mo, items: next }
+    const per = setsByPosition(d, plan, [setL(1), setL(2), setL(3)], sid)
+    expect(positionDone(d, plan, per[2], 2)).toBe(3)
+    expect(hardSetsByMuscle([setL(1)], [{ id: sid, started_at: new Date(2026, 9, 7, 10).toISOString() }], plan, new Date(2026, 9, 7, 12), 0)).toEqual({ lats: 1 })
+  })
+  it('Kalender und Bericht zählen Hinzufügen nicht als ausgelassen oder getauscht', () => {
+    const now = new Date(2026, 9, 7, 12)
+    const sessions = [{ id: sid, day_key: 'mo_brust', started_at: new Date(2026, 9, 5, 18).toISOString() }]
+    expect(weekAdjustments([addRow(sid, 'y_row', 1)], sessions, plan, now)).toEqual({})
+    expect(weekAdjustments([addRow(sid, 'y_row', 1), swapRow(sid, A[0], 'hs_high_row')], sessions, plan, now)).toEqual({ mo_brust: { skipped: 0, swapped: 1 } })
+  })
+  it('Backup: hinzufuegen mit Position gültig, ohne Position oder mit unbekannter Übung abgelehnt; Variante im day_key erlaubt', () => {
+    const base = { format: 'lift-heavy-backup', version: 1, session: [{ id: crypto.randomUUID(), day_key: 'mo_brust', started_at: '2026-10-05T10:00:00.000Z', ended_at: null, note: null }], workout_set: [], bodyweight: [] }
+    const sessionId = base.session[0].id
+    const good = { ...buildAdjustment({ sessionId, typ: 'hinzufuegen', original_key: 'y_row', position: 1, dauerhaft: false }) }
+    const ok = (row: any) => parseBackup(JSON.stringify({ ...base, session_adjustment: [row] })).ok
+    expect(ok(good)).toBe(true)
+    expect(ok({ ...good, position: null })).toBe(false)
+    expect(ok({ ...good, original_key: 'hs_gibt_es_nicht' })).toBe(false)
+    const ov = buildOverride({ dayKey: 'mi_beine_b', typ: 'hinzufuegen', exercise_key: 'hs_calf_machine', position: 0 })
+    const okOv = (row: any) => parseBackup(JSON.stringify({ ...base, plan_override: [row] })).ok
+    expect(okOv(ov)).toBe(true)
+    expect(okOv({ ...ov, day_key: 'mi_beine_x' })).toBe(false)
+    expect(okOv({ ...ov, day_key: 'sa_laufen' })).toBe(false)
   })
 })
 

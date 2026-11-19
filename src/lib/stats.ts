@@ -40,7 +40,7 @@ export interface DayAdjustments {
 
 /**
  * Ausgelassene und getauschte Uebungen je Plan-Tag (Schluessel = Tag ohne Variante) in der Woche, die `weeksAgo`
- * Wochen vor der aktuellen beginnt. Grundlage der Markierung in der Wochenleiste. Verschieben zaehlt nicht.
+ * Wochen vor der aktuellen beginnt. Grundlage der Markierung in der Wochenleiste. Verschieben und Hinzufuegen zaehlen nicht.
  */
 export function weekAdjustments(
   adjustments: SessionAdjustmentRow[],
@@ -64,7 +64,7 @@ export function weekAdjustments(
   for (const a of adjustments) {
     const s = inWeek.get(a.session_id)
     const day = s && planDayForKey(s.day_key, plan)
-    if (!day || a.typ === 'reihenfolge') continue
+    if (!day || (a.typ !== 'auslassen' && a.typ !== 'tauschen')) continue
     const cur = (out[day.key] ??= { skipped: 0, swapped: 0 })
     if (a.typ === 'auslassen') cur.skipped++
     else cur.swapped++

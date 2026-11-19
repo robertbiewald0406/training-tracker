@@ -17,6 +17,7 @@ import {
   variantMatch,
   variantOfKey,
   resolvePosition,
+  sessionDayKey,
   setsByPosition,
   setsFor,
   type Position,
@@ -28,7 +29,6 @@ import {
   effectiveSessionDay,
   moveTarget,
   remapPosition,
-  swapChoices,
   withFullAssign,
 } from '../lib/adjust'
 import { plan } from '../lib/plan'
@@ -117,6 +117,82 @@ export function Workout({ session, sessions, sets, adjustments, overrides }: Pro
   const per = setsByPosition(day, plan, sets, session.id, pos.assign)
   const go = (i: number) => update({ ...pos, itemIdx: Math.max(0, Math.min(n, i)) })
 
+  /** Tauschen, Reihenfolge, Auslassen, Hinzufügen: Anpassung speichern (nur heute und/oder dauerhaft) und die Position nachziehen. */
+  async function adjustDay(action: AdjustAction, c: AdjustChoice, anchorKey: string | null) {
+    if (!pos) return
+    const planDay = planDayForKey(session.day_key, plan)!
+    const typ = action === 'oben' || action === 'unten' ? 'reihenfolge' : action
+    // Dauerhaft: Position bezieht sich auf die Liste ohne "nur heute"-Anpassungen (Plan + dauerhafte), sonst auf die laufende.
+    const permItems = effectiveDay(planDay, variant, plan, overrides).items
+    const basis = c.dauerhaft ? permItems : day.items
+    let original = anchorKey ?? ''
+    let position: number | null = null
+    if (typ === 'reihenfolge') {
+      position = moveTarget(basis, original, action === 'oben' ? 'up' : 'down')
+      if (position === null) return
+    }
+    if (typ === 'hinzufuegen') {
+      if (!c.neuer_key) return
+      original = c.neuer_key
+      // Dauerhaft zaehlt der Plan: wurde die aktuelle Uebung nur heute eingetauscht, steht die neue nach der Plan-Uebung.
+      const swappedFrom = adjustments.find((a) => a.session_id === session.id && a.typ === 'tauschen' && !a.dauerhaft && a.neuer_key === anchorKey)
+      const anchor = c.dauerhaft && swappedFrom ? swappedFrom.original_key : anchorKey
+      const at = anchor ? basis.findIndex((i) => i.exercise_key === anchor) : -1
+      position = at >= 0 ? at + 1 : basis.length // direkt nach der aktuellen Uebung, sonst ans Ende
+    }
+    const neuer = typ === 'tauschen' ? c.neuer_key : null
+    const row = buildAdjustment({
+      sessionId: session.id,
+      typ,
+      original_key: original,
+      neuer_key: neuer,
+      position,
+      grund: c.grund,
+      note: c.note,
+      dauerhaft: c.dauerhaft,
+    })
+    const override = c.dauerhaft
+      ? buildOverride({
+          // "Hinzufuegen" gilt nur fuer die Variante, in der es gewaehlt wurde (z. B. mi_beine_b).
+          dayKey: typ === 'hinzufuegen' && variant ? sessionDayKey(planDay, variant) : planDay.key,
+          typ,
+          exercise_key: original,
+          neuer_key: neuer,
+          position,
+        })
+      : null
+    const mine = adjustments.filter((a) => a.session_id === session.id)
+    const nextDay = effectiveDay(planDay, variant, plan, override ? [...overrides, override] : overrides, override ? mine : [...mine, row])
+    setBusy(true)
+    try {
+      const moved = remapPosition(withFullAssign(pos, day, plan, sets, session.id), day.items, nextDay.items, neuer ?? undefined)
+      // Wurde am Ende ("Fertig") eine Uebung hinzugefuegt, geht es mit ihr weiter.
+      const addedIdx = typ === 'hinzufuegen' ? nextDay.items.findIndex((i) => i.exercise_key === original) : -1
+      update(typ === 'hinzufuegen' && pos.itemIdx >= day.items.length && addedIdx >= 0 ? { ...moved, itemIdx: addedIdx } : moved)
+      setPanel(null)
+      setAdjust(null)
+      await saveAndSync(supabase, 'session_adjustment', row)
+      if (override) await saveAndSync(supabase, 'plan_override', override)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const dayKeys = day.items.map((i) => i.exercise_key)
+  const addPanel = adjust === 'hinzufuegen' && (
+    <AdjustPanel
+      key="hinzufuegen"
+      action="hinzufuegen"
+      exerciseName=""
+      currentKey={null}
+      excludeKeys={dayKeys}
+      allowPermanent
+      busy={busy}
+      onConfirm={(c) => void adjustDay('hinzufuegen', c, day.items[idx]?.exercise_key ?? null)}
+      onCancel={() => setAdjust(null)}
+    />
+  )
+
   // Kopf: Tagesname und Uebungsnavigation. Jede Uebung ist ein Tipp-Ziel (erledigt = Haken, aktuell = Neon).
   const header = (
     <div className="space-y-2">
@@ -161,7 +237,11 @@ export function Workout({ session, sessions, sets, adjustments, overrides }: Pro
           </div>
           <Button variant="primary" onClick={() => void endSession()}>Einheit beenden</Button>
           <Button onClick={() => go(n - 1)}>Zurück zur letzten Übung</Button>
+          <Button onClick={() => setAdjust(adjust === 'hinzufuegen' ? null : 'hinzufuegen')} aria-pressed={adjust === 'hinzufuegen'}>
+            Übung hinzufügen
+          </Button>
         </Card>
+        {addPanel}
       </>
     )
   }
@@ -238,49 +318,6 @@ export function Workout({ session, sessions, sets, adjustments, overrides }: Pro
         note: v.segment ? encodeSegment(v.segment) : parseSegment(editSet.note) ? null : editSet.note,
       })
       setEditing(null)
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  /** Tauschen, Reihenfolge, Auslassen: Anpassung speichern (nur heute und/oder dauerhaft) und die Position nachziehen. */
-  async function adjustExercise(action: AdjustAction, c: AdjustChoice) {
-    if (!pos) return
-    const planDay = planDayForKey(session.day_key, plan)!
-    const key = item.exercise_key
-    const typ = action === 'oben' || action === 'unten' ? 'reihenfolge' : action
-    // Dauerhaft: Position bezieht sich auf die Liste ohne "nur heute"-Anpassungen (Plan + dauerhafte), sonst auf die laufende.
-    const permItems = effectiveDay(planDay, variant, plan, overrides).items
-    const basis = c.dauerhaft ? permItems : day.items
-    const position = typ === 'reihenfolge' ? moveTarget(basis, key, action === 'oben' ? 'up' : 'down') : null
-    if (typ === 'reihenfolge' && position === null) return
-    const row = buildAdjustment({
-      sessionId: session.id,
-      typ,
-      original_key: key,
-      neuer_key: c.neuer_key,
-      position,
-      grund: c.grund,
-      note: c.note,
-      dauerhaft: c.dauerhaft,
-    })
-    const override = c.dauerhaft
-      ? buildOverride({ dayKey: planDay.key, typ, exercise_key: key, neuer_key: c.neuer_key, position })
-      : null
-    const nextDay = effectiveDay(
-      planDay,
-      variant,
-      plan,
-      override ? [...overrides, override] : overrides,
-      override ? adjustments.filter((a) => a.session_id === session.id) : [...adjustments.filter((a) => a.session_id === session.id), row],
-    )
-    setBusy(true)
-    try {
-      update(remapPosition(withFullAssign(pos, day, plan, sets, session.id), day.items, nextDay.items, c.neuer_key ?? undefined))
-      setPanel(null)
-      setAdjust(null)
-      await saveAndSync(supabase, 'session_adjustment', row)
-      if (override) await saveAndSync(supabase, 'plan_override', override)
     } finally {
       setBusy(false)
     }
@@ -391,21 +428,34 @@ export function Workout({ session, sessions, sets, adjustments, overrides }: Pro
               {b.text}
             </button>
           ))}
+          <button
+            type="button"
+            disabled={busy}
+            aria-pressed={adjust === 'hinzufuegen'}
+            onClick={() => setAdjust(adjust === 'hinzufuegen' ? null : 'hinzufuegen')}
+            className={`col-span-2 flex min-h-12 items-center justify-center gap-1 border-2 border-ink font-display text-base uppercase tracking-wide text-ink ${
+              adjust === 'hinzufuegen' ? 'bg-info' : 'bg-card'
+            }`}
+          >
+            + Übung hinzufügen
+          </button>
         </div>
       </Card>
 
-      {adjust && (
+      {adjust && adjust !== 'hinzufuegen' && (
         <AdjustPanel
           key={`${adjust}:${item.exercise_key}`}
           action={adjust}
           exerciseName={plan.exercises[item.exercise_key].name}
-          choices={swapChoices(plan, day.items, item.exercise_key)}
+          currentKey={item.exercise_key}
+          excludeKeys={dayKeys}
           allowPermanent={effectiveDay(planDayForKey(session.day_key, plan)!, variant, plan, overrides).items.some((i) => i.exercise_key === item.exercise_key)}
           busy={busy}
-          onConfirm={(c) => void adjustExercise(adjust, c)}
+          onConfirm={(c) => void adjustDay(adjust, c, item.exercise_key)}
           onCancel={() => setAdjust(null)}
         />
       )}
+      {addPanel}
 
       <LastTime key={chosenKey} log={prev} current={done} />
 

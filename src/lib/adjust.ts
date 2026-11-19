@@ -26,6 +26,12 @@ export const GRUND_TEXT: Record<AdjustGrund, string> = {
 }
 export const NOTE_MAX = 200
 
+/** Vorgaben fuer eine hinzugefuegte Uebung (steht nicht im Plan): 3 Saetze, 8 bis 12 Wdh., 90 s Pause; Zeituebungen 30 bis 60 s. */
+export function defaultItem(plan: Plan, key: string): PlanItem {
+  const timed = plan.exercises[key]?.unit === 'sec'
+  return { exercise_key: key, sets: 3, rep_min: timed ? 30 : 8, rep_max: timed ? 60 : 12, rest_sec: timed ? 60 : 90 }
+}
+
 /**
  * Legt Anpassungen der Reihe nach auf eine Uebungsliste (Positionen beziehen sich auf die Liste zum Zeitpunkt der
  * Anpassung). Unbekannte oder stillgelegte Zieluebungen, Doppelte und Anpassungen an fehlenden Uebungen werden ignoriert.
@@ -33,6 +39,12 @@ export const NOTE_MAX = 200
 export function applyAdjustments(items: PlanItem[], list: Adjust[], plan: Plan): PlanItem[] {
   let out = items.slice()
   for (const a of list) {
+    if (a.typ === 'hinzufuegen') {
+      const k = a.original_key
+      if (!plan.exercises[k] || plan.exercises[k].retired || out.some((x) => x.exercise_key === k)) continue
+      out.splice(Math.max(0, Math.min(out.length, a.position ?? out.length)), 0, defaultItem(plan, k))
+      continue
+    }
     const i = out.findIndex((x) => x.exercise_key === a.original_key)
     if (i < 0) continue
     if (a.typ === 'auslassen') out.splice(i, 1)
@@ -63,7 +75,9 @@ export function effectiveDay(
   adjustments: SessionAdjustmentRow[] = [],
 ): PlanDay {
   const base = dayForVariant(day, variant)
-  const perm = overrides.filter((o) => o.day_key === day.key).sort(byCreated)
+  // Dauerhafte Anpassungen des Tages; "hinzufuegen" kann auf eine Variante begrenzt sein (day_key "mi_beine_b").
+  const vKey = variant ? `${day.key}_${variant.toLowerCase()}` : null
+  const perm = overrides.filter((o) => o.day_key === day.key || (vKey !== null && o.day_key === vKey)).sort(byCreated)
   const today = adjustments.filter((a) => !a.dauerhaft).sort(byLogged)
   const items = applyAdjustments(applyAdjustments(base.items, perm.map(toAdjust), plan), today, plan)
   return { ...base, items }
@@ -169,7 +183,7 @@ export function buildAdjustment(i: BuildAdjustmentInput): SessionAdjustmentRow {
     typ: i.typ,
     original_key: i.original_key,
     neuer_key: i.typ === 'tauschen' ? (i.neuer_key ?? null) : null,
-    position: i.typ === 'reihenfolge' ? (i.position ?? null) : null,
+    position: i.typ === 'reihenfolge' || i.typ === 'hinzufuegen' ? (i.position ?? null) : null,
     grund: i.grund ?? null,
     note: clean(i.note),
     dauerhaft: i.dauerhaft,
@@ -191,7 +205,7 @@ export function buildOverride(i: {
     typ: i.typ,
     exercise_key: i.exercise_key,
     neuer_key: i.typ === 'tauschen' ? (i.neuer_key ?? null) : null,
-    position: i.typ === 'reihenfolge' ? (i.position ?? null) : null,
+    position: i.typ === 'reihenfolge' || i.typ === 'hinzufuegen' ? (i.position ?? null) : null,
     created_at: (i.now ?? new Date()).toISOString(),
   }
 }
@@ -199,6 +213,7 @@ export function buildOverride(i: {
 /** Kurzbeschreibung einer Anpassung ("Hack Squat ausgelassen", "A getauscht gegen B", "A nach Position 2"). */
 export function describeAdjust(a: Adjust, plan: Plan): string {
   const name = (k: string | null) => (k && plan.exercises[k]?.name) || k || '?'
+  if (a.typ === 'hinzufuegen') return `${name(a.original_key)} hinzugefügt`
   if (a.typ === 'auslassen') return `${name(a.original_key)} ausgelassen`
   if (a.typ === 'tauschen') return `${name(a.original_key)} getauscht gegen ${name(a.neuer_key)}`
   return `${name(a.original_key)} auf Position ${(a.position ?? 0) + 1}`
@@ -206,7 +221,9 @@ export function describeAdjust(a: Adjust, plan: Plan): string {
 
 export function describeOverride(o: PlanOverrideRow, plan: Plan): { day: string; text: string } {
   return {
-    day: plan.days.find((d) => d.key === o.day_key)?.name ?? o.day_key,
+    day: planDayForKey(o.day_key, plan)
+      ? `${planDayForKey(o.day_key, plan)!.name}${variantOfKey(o.day_key, plan) ? ` · ${variantOfKey(o.day_key, plan)}` : ''}`
+      : o.day_key,
     text: describeAdjust(toAdjust(o), plan),
   }
 }

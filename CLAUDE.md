@@ -24,7 +24,7 @@ Hosting: GitHub Pages über GitHub Actions (Vite `base` auf den Repo-Namen).
 ## Supabase
 - Schema liegt in supabase/schema.sql und ist bereits eingespielt (Tabellen: session, workout_set, bodyweight).
   Spätere Änderungen liegen als Datei in supabase/migrations/ und werden vom Besitzer im SQL Editor ausgeführt
-  (002: session_adjustment, plan_override).
+  (002: session_adjustment, plan_override; 006: Anpassungstyp hinzufuegen).
 - Ein einziger Nutzer (der Besitzer), Login mit E-Mail + Passwort.
 - Sign-up in der App nicht anbieten, nur Login.
 
@@ -56,9 +56,19 @@ Hosting: GitHub Pages über GitHub Actions (Vite `base` auf den Repo-Namen).
   volle Satzzahl, der Hinweis erscheint nirgends. Aktuell 0.
 
 ## Anpassungen in der Einheit
-- Übungsansicht: Tauschen (Alternativen zuerst, dann Katalog ohne retired und ohne Übungen des Tages), Nach oben,
-  Nach unten, Auslassen (src/screens/AdjustPanel.tsx, Logik src/lib/adjust.ts). Je Aktion optional Grund
-  (schmerz, geraet_belegt, zeit, anderes) und Kommentar (max. 200 Zeichen), dazu "Nur heute" oder "Dauerhaft im Plan".
+- Übungsansicht: Tauschen, Übung hinzufügen, Nach oben, Nach unten, Auslassen (src/screens/AdjustPanel.tsx, Logik
+  src/lib/adjust.ts). Je Aktion optional Grund (schmerz, geraet_belegt, zeit, anderes) und Kommentar (max. 200
+  Zeichen), dazu "Nur heute" oder "Dauerhaft im Plan". Auslassen und Verschieben haben keine Auswahl.
+- Tauschen und Hinzufügen wählen über den `ExercisePicker` (src/ui/ExercisePicker.tsx, Logik src/lib/exerciseSearch.ts):
+  Combobox (role combobox/listbox, Pfeiltasten, Pos1/Ende, Enter, Escape, Tab), Suchfeld über Name, Gerät, Aufsatz und
+  Hauptmuskel (nur angezeigter Text), Groß-/Kleinschreibung und Umlaute egal (ä/ae, ß/ss), alle Wörter müssen vorkommen,
+  Namens-Treffer zuerst; Filter Muskelgruppe und Gerätegruppe. Katalog = alle nicht stillgelegten Übungen, auch die in
+  keinem Tag stehen, ohne die schon im Tag. Ohne Eingabe: Alternativen der aktuellen Übung zuerst, dann nach Muskel.
+  Der Knopf "Alternative" (nur die `alternatives`, nur für diese Einheit) bleibt daneben bestehen.
+- "Übung hinzufügen" (auch am Ende bei "Fertig"; entspricht einer freien Übung): Typ `hinzufuegen`, `original_key` =
+  hinzugefügte Übung, `position` = Einfügeposition (direkt nach der aktuellen Übung), Vorgaben 3 x 8-12, 90 s Pause
+  (Zeitübungen 30-60 s) in `defaultItem`. Dauerhaft auf einem Tag mit Variante: `plan_override.day_key` = z. B.
+  `mi_beine_b` (nur diese Variante); Auslassen/Tauschen/Verschieben gelten für den ganzen Tag.
 - Jede Aktion = Zeile in `session_adjustment` (typ auslassen/tauschen/reihenfolge, original_key, neuer_key, position,
   dauerhaft). "Dauerhaft" legt zusätzlich eine Zeile in `plan_override` (day_key ohne Variante, typ, exercise_key,
   neuer_key, position) an. plan.json bleibt unverändert; `effectiveDay` legt plan_override (nach created_at) und die
@@ -74,7 +84,7 @@ Hosting: GitHub Pages über GitHub Actions (Vite `base` auf den Repo-Namen).
   importierbar, strenge Prüfung wie bei Sätzen).
 - Einstellungen (Tab Mehr): "Dauerhafte Anpassungen" mit "Zurücksetzen" je Anpassung (Tombstone auf plan_override).
 - Statistik zählt nur tatsächlich gespeicherte Sätze. Die Wochenleiste auf der Startseite markiert Tage mit
-  ausgelassenen oder getauschten Übungen (`weekAdjustments` in src/lib/stats.ts) und listet sie mit Grund.
+  ausgelassenen oder getauschten Übungen (Hinzufügen und Verschieben zählen nicht) (`weekAdjustments` in src/lib/stats.ts) und listet sie mit Grund.
 
 ## Datenregeln
 - Zweites Segment je Satz (Dropsatz, Aufstocksatz, Backoff-Satz; Schalter im Satz-Editor, öffnet Gewicht und

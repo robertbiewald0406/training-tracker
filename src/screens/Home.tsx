@@ -96,7 +96,7 @@ function WeekAdjustments({
     sessions.filter((s) => new Date(s.started_at).getTime() >= start && new Date(s.started_at).getTime() < start + 7 * 86_400_000).map((s) => [s.id, s]),
   )
   const rows = adjustments
-    .filter((a) => a.typ !== 'reihenfolge' && inWeek.has(a.session_id))
+    .filter((a) => (a.typ === 'auslassen' || a.typ === 'tauschen') && inWeek.has(a.session_id))
     .sort((a, b) => a.logged_at.localeCompare(b.logged_at))
   if (!rows.length) return null
   return (

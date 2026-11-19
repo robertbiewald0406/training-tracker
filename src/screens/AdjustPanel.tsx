@@ -1,15 +1,15 @@
 import { useState } from 'react'
 import { GRUENDE, NOTE_MAX } from '../lib/adjust'
-import { plan } from '../lib/plan'
 import type { AdjustGrund } from '../lib/types'
 import { Button } from '../ui/Button'
 import { Card } from '../ui/Card'
+import { ExercisePicker } from '../ui/ExercisePicker'
 import { Segmented } from '../ui/Segmented'
 
-export type AdjustAction = 'auslassen' | 'tauschen' | 'oben' | 'unten'
+export type AdjustAction = 'auslassen' | 'tauschen' | 'oben' | 'unten' | 'hinzufuegen'
 
 export interface AdjustChoice {
-  neuer_key: string | null
+  neuer_key: string | null // bei 'tauschen' die neue, bei 'hinzufuegen' die hinzugefuegte Uebung
   grund: AdjustGrund | null
   note: string
   dauerhaft: boolean
@@ -18,7 +18,9 @@ export interface AdjustChoice {
 interface Props {
   action: AdjustAction
   exerciseName: string
-  choices: { alternatives: string[]; others: string[] }
+  /** Aktuelle Übung (Alternativen zuerst) und Übungen, die nicht angeboten werden (schon im Tag). */
+  currentKey: string | null
+  excludeKeys: string[]
   allowPermanent: boolean // "Dauerhaft" nur, wenn die Uebung im Plan-Tag selbst steht (nicht nur heute eingetauscht)
   busy: boolean
   onConfirm: (c: AdjustChoice) => void
@@ -30,48 +32,36 @@ const TITLE: Record<AdjustAction, string> = {
   tauschen: 'Tauschen',
   oben: 'Nach oben',
   unten: 'Nach unten',
+  hinzufuegen: 'Übung hinzufügen',
 }
 
 const pick = (selected: boolean) => `${selected ? 'bg-mark' : 'bg-card'}`
 
-/** Auswahl fuer Tauschen, optional Grund und Kommentar, und "Nur heute" oder "Dauerhaft im Plan". */
-export function AdjustPanel({ action, exerciseName, choices, allowPermanent, busy, onConfirm, onCancel }: Props) {
+/** Auswahl (Tauschen, Hinzufügen) per Suchfeld, optional Grund und Kommentar, und "Nur heute" oder "Dauerhaft im Plan". */
+export function AdjustPanel({ action, exerciseName, currentKey, excludeKeys, allowPermanent, busy, onConfirm, onCancel }: Props) {
   const [to, setTo] = useState<string | null>(null)
   const [grund, setGrund] = useState<AdjustGrund | null>(null)
   const [note, setNote] = useState('')
   const [scope, setScope] = useState<'heute' | 'dauerhaft'>('heute')
-  const canPick = action !== 'tauschen' || to !== null
-
-  const option = (k: string) => (
-    <button
-      key={k}
-      type="button"
-      aria-pressed={to === k}
-      onClick={() => setTo(k)}
-      className={`min-h-14 border-2 border-ink px-3 text-left text-lg ${pick(to === k)}`}
-    >
-      {plan.exercises[k].name}
-    </button>
-  )
+  const needsPick = action === 'tauschen' || action === 'hinzufuegen'
+  const canPick = !needsPick || to !== null
 
   return (
     <Card className="space-y-3" aria-label={`${TITLE[action]}: ${exerciseName}`}>
       <div>
         <h2 className="text-xl leading-tight">{TITLE[action]}</h2>
-        <p className="text-base">{exerciseName}</p>
+        <p className="text-base">{action === 'hinzufuegen' ? 'Kommt nach der aktuellen Übung dazu.' : exerciseName}</p>
       </div>
 
-      {action === 'tauschen' && (
-        <div className="space-y-2">
-          {choices.alternatives.length > 0 && (
-            <>
-              <p className="text-base">Alternativen</p>
-              <div className="flex flex-col gap-2">{choices.alternatives.map(option)}</div>
-            </>
-          )}
-          <p className="text-base">Alle Übungen</p>
-          <div className="flex max-h-72 flex-col gap-2 overflow-y-auto">{choices.others.map(option)}</div>
-        </div>
+      {needsPick && (
+        <ExercisePicker
+          label={action === 'tauschen' ? 'Tauschen gegen' : 'Übung wählen'}
+          value={to}
+          onChange={setTo}
+          excludeKeys={excludeKeys}
+          currentKey={action === 'tauschen' ? currentKey : null}
+          autoFocus
+        />
       )}
 
       <div className="space-y-2">

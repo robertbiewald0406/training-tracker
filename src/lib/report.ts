@@ -278,7 +278,7 @@ export function buildWeekReport(i: {
   // Ausgelassen und getauscht (mit Grund). Verschieben zaehlt nicht.
   const sessionById = new Map(sessions.filter((s) => new Date(s.started_at) >= start && new Date(s.started_at) < end).map((s) => [s.id, s]))
   const adj: AdjustmentRow[] = adjustments
-    .filter((a) => a.typ !== 'reihenfolge' && sessionById.has(a.session_id))
+    .filter((a) => (a.typ === 'auslassen' || a.typ === 'tauschen') && sessionById.has(a.session_id))
     .sort((a, b) => a.logged_at.localeCompare(b.logged_at))
     .map((a) => ({
       id: a.id,
