@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { plan } from './plan'
-import { weightUnit } from './logger'
+import { dayForVariant, weightUnit } from './logger'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { Warning } from '../ui/Warning'
 
@@ -73,12 +73,83 @@ describe('plan.json', () => {
   })
   it('Warnhinweis erscheint nur bei Uebungen mit warning', () => {
     const withW = Object.entries(plan.exercises).filter(([, e]) => e.warning)
-    expect(withW.map(([k]) => k).sort()).toEqual(['captain_chair_leg_raise', 'dead_bug', 'russian_twist'])
+    expect(withW.map(([k]) => k).sort()).toEqual(['captain_chair_leg_raise', 'dead_bug', 'hip_hinge_machine', 'russian_twist'])
     expect(plan.exercises.russian_twist.warning).toContain('Rotation nur ohne Gewicht')
     for (const [k, e] of Object.entries(plan.exercises)) {
       const html = renderToStaticMarkup(<Warning text={e.warning} />)
       if (e.warning) expect(html, k).toContain(e.warning)
       else expect(html, k).toBe('')
     }
+  })
+})
+
+describe('Hip-Hinge-Maschine (Beintag Woche B)', () => {
+  const legs = plan.days.find((d) => d.key === 'mi_beine')!
+  const keys = (v: string) => dayForVariant(legs, v).items.map((i) => i.exercise_key)
+  const ex = plan.exercises.hip_hinge_machine
+
+  it('Übung existiert, ist aktiv und beschrieben', () => {
+    expect(ex).toBeDefined()
+    expect(ex.retired).toBeFalsy()
+    expect(ex).toMatchObject({
+      name: 'Hip Hinge (Maschine, 45°-Hüftstrecker)',
+      equipment: 'Hip-Hinge-/45°-Hüftstreck-Maschine',
+      attachment: 'Keine',
+      primary_muscle: 'hamstrings',
+      secondary_muscles: ['glutes', 'erector_spinae'],
+      alternatives: ['seated_leg_curl', 'lying_leg_curl'],
+    })
+    expect(ex.cue).toMatch(/^Hüfte nach hinten schieben, Rücken neutral und fest am Polster\./)
+    expect(ex.cue).toMatch(/keine Schwungbewegung\.$/)
+  })
+  it('Warnhinweis vorhanden (Bandscheibe, Freigabe, Abbruch bei Beschwerden) und wird angezeigt', () => {
+    expect(ex.warning).toMatch(/^Bandscheibe \(L2\/3\)/)
+    expect(ex.warning).toMatch(/Freigabe von Arzt oder Physio/)
+    expect(ex.warning).toMatch(/etwa 50 %/)
+    expect(ex.warning).toMatch(/sofort abbrechen und abklären lassen\.$/)
+    expect(renderToStaticMarkup(<Warning text={ex.warning} />)).toContain('Hüftbeuge-Bewegung unter Last')
+  })
+  it('Last wie bei den anderen Beinmaschinen (Stack), kein Körpergewicht, keine Zeit, nicht einseitig', () => {
+    expect(weightUnit(ex)).toBe('kg Stack')
+    expect(weightUnit(plan.exercises.seated_leg_curl)).toBe('kg Stack')
+    expect(ex.bodyweight).toBeFalsy()
+    expect(ex.unit).toBeUndefined()
+    expect(ex.unilateral).toBeFalsy()
+  })
+  it('Woche B: Hip Hinge an Position 1 mit 3 Sätzen, 8 bis 12 Wdh., 90 s Pause; übrige Reihenfolge bleibt', () => {
+    expect(dayForVariant(legs, 'B').items[0]).toEqual({ exercise_key: 'hip_hinge_machine', sets: 3, rep_min: 8, rep_max: 12, rest_sec: 90, variant: 'B' })
+    expect(keys('B')).toEqual(['hip_hinge_machine', 'seated_leg_curl', 'lying_leg_curl', 'adductor_machine', 'abductor_machine', 'seated_calf_raise'])
+    const rest = dayForVariant(legs, 'B').items.slice(1).map((i) => [i.exercise_key, i.sets, i.rep_min, i.rep_max, i.rest_sec])
+    expect(rest).toEqual([
+      ['seated_leg_curl', 4, 8, 12, 90],
+      ['lying_leg_curl', 4, 10, 15, 90],
+      ['adductor_machine', 3, 10, 15, 75],
+      ['abductor_machine', 3, 12, 15, 75],
+      ['seated_calf_raise', 4, 10, 15, 75],
+    ])
+  })
+  it('Woche A unverändert, ohne Hip Hinge', () => {
+    expect(dayForVariant(legs, 'A').items.map((i) => [i.exercise_key, i.sets, i.rep_min, i.rep_max, i.rest_sec])).toEqual([
+      ['hack_squat', 4, 6, 10, 150],
+      ['leg_extension', 4, 10, 15, 90],
+      ['adductor_machine', 3, 10, 15, 75],
+      ['abductor_machine', 3, 12, 15, 75],
+      ['standing_calf_raise', 4, 10, 15, 90],
+    ])
+    expect(keys('A')).not.toContain('hip_hinge_machine')
+    expect(legs.items.filter((i) => i.exercise_key === 'hip_hinge_machine')).toHaveLength(1)
+  })
+  it('Hip Hinge steht in den alternatives der beiden Beincurls, alle alternatives verweisen auf existierende, aktive Übungen', () => {
+    expect(plan.exercises.seated_leg_curl.alternatives).toEqual(['lying_leg_curl', 'hip_hinge_machine'])
+    expect(plan.exercises.lying_leg_curl.alternatives).toEqual(['seated_leg_curl', 'hip_hinge_machine'])
+    for (const k of ['hip_hinge_machine', 'seated_leg_curl', 'lying_leg_curl'])
+      for (const a of plan.exercises[k].alternatives) {
+        expect(plan.exercises[a], `${k} -> ${a}`).toBeDefined()
+        expect(plan.exercises[a].retired, `${k} -> ${a}`).toBeFalsy()
+      }
+  })
+  it('bestehende Keys sind nicht stillgelegt oder umbenannt', () => {
+    for (const k of ['seated_leg_curl', 'lying_leg_curl', 'hack_squat', 'leg_extension', 'adductor_machine', 'abductor_machine', 'standing_calf_raise', 'seated_calf_raise'])
+      expect(plan.exercises[k]?.retired, k).toBeFalsy()
   })
 })

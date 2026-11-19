@@ -41,10 +41,12 @@ Hosting: GitHub Pages über GitHub Actions (Vite `base` auf den Repo-Namen).
 - Verteilung: kein Bauch im Plan (alle Rumpfübungen mit primary_muscle abs, core, obliques sind stillgelegt, die
   Tage heißen "Brust + Trizeps" und "Arme"). Statistik zählt abs/core/obliques nicht in den Wochensätzen
   (`UNCOUNTED_MUSCLES` in src/lib/stats.ts). Adduktoren, Abduktoren und Waden in beiden Beinvarianten.
+  Beintag B (hinten) beginnt mit `hip_hinge_machine` (3 x 8-12, 90 s, Warnhinweis Bandscheibe; Alternativen seated_leg_curl und
+  lying_leg_curl, die sie ihrerseits als Alternative führen); Woche A hat sie nicht.
 - Stillgelegt (`retired`: true, Definition bleibt, damit alte Sätze lesbar sind): hs_chest_press, plank, side_plank,
   cable_pallof_press, hanging_knee_raise, captain_chair_leg_raise, russian_twist, dead_bug, hanging_leg_raise, neg_situp, hs_ab_machine, lying_reverse_crunch. Eine retired-Übung steht nie in einem Tag oder in alternatives einer
   aktiven Übung (Test in plan.test.tsx). Schlüssel nie umbenennen oder löschen.
-- Optionales Feld `warning` je Übung (captain_chair_leg_raise, russian_twist, dead_bug): gelber Hinweiskasten (src/ui/Warning.tsx)
+- Optionales Feld `warning` je Übung (hip_hinge_machine, captain_chair_leg_raise, russian_twist, dead_bug): gelber Hinweiskasten (src/ui/Warning.tsx)
   direkt unter dem Hinweis `cue`, nur bei Übungen mit warning.
 - Zeitübungen (`unit: "sec"`: plank, side_plank): Sekunden statt Wiederholungen (5-s-Schritte, direkte Eingabe,
   Button "Stoppuhr"). Dauer steht in `reps`, weight_kg ist 0. Kein 1RM/Rekord für Zeitübungen.

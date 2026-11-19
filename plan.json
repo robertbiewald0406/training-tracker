@@ -159,9 +159,26 @@
       "primary_muscle": "hamstrings",
       "secondary_muscles": [],
       "alternatives": [
-        "seated_leg_curl"
+        "seated_leg_curl",
+        "hip_hinge_machine"
       ],
       "cue": "Hüfte fest am Polster"
+    },
+    "hip_hinge_machine": {
+      "name": "Hip Hinge (Maschine, 45°-Hüftstrecker)",
+      "equipment": "Hip-Hinge-/45°-Hüftstreck-Maschine",
+      "attachment": "Keine",
+      "primary_muscle": "hamstrings",
+      "secondary_muscles": [
+        "glutes",
+        "erector_spinae"
+      ],
+      "alternatives": [
+        "seated_leg_curl",
+        "lying_leg_curl"
+      ],
+      "cue": "Hüfte nach hinten schieben, Rücken neutral und fest am Polster. Die Bewegung kommt aus der Hüfte, nicht aus dem unteren Rücken. Am Endpunkt kein Hohlkreuz. Langsam absenken, keine Schwungbewegung.",
+      "warning": "Bandscheibe (L2/3): Hüftbeuge-Bewegung unter Last. Erst nach Freigabe von Arzt oder Physio, leicht beginnen (etwa 50 %), neutraler Rücken, kein Hohlkreuz. Bei Schmerz, Ausstrahlung ins Bein, Kribbeln oder Taubheit sofort abbrechen und abklären lassen."
     },
     "seated_leg_curl": {
       "name": "Sitzendes Beincurl",
@@ -170,7 +187,8 @@
       "primary_muscle": "hamstrings",
       "secondary_muscles": [],
       "alternatives": [
-        "lying_leg_curl"
+        "lying_leg_curl",
+        "hip_hinge_machine"
       ],
       "cue": "Oberschenkelpolster fest, volle Dehnung unten"
     },
@@ -701,6 +719,14 @@
           "rep_max": 15,
           "rest_sec": 90,
           "variant": "A"
+        },
+        {
+          "exercise_key": "hip_hinge_machine",
+          "sets": 3,
+          "rep_min": 8,
+          "rep_max": 12,
+          "rest_sec": 90,
+          "variant": "B"
         },
         {
           "exercise_key": "seated_leg_curl",
